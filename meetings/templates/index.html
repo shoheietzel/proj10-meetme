@@ -35,11 +35,12 @@
 <body>
 <div class="container">
 
-<h1>Busy times</h1>
+<h2>Google Calendar Busy Times</h2>
+<br>
 
 <!--
   -- If there are any warnings or other messages from a prior action,
-  -- they appear above the rest of the content, just until the next 
+  -- they appear above the rest of the content, just until the next
   -- action.
   -->
 
@@ -53,7 +54,7 @@
   {% endif %}
 {% endwith %}
 
-<h2>Date range</h2>
+<h4>Date range</h4>
   <form action="/setrange" method="post">
   <input type="text" name="daterange" size="12"
     {% if session.daterange is defined %}
@@ -66,41 +67,47 @@
   $(function() {
   $('input[name="daterange"]').daterangepicker(
     {    ranges: {
-           'Today': [moment(), moment()],
+           'Today': [moment(), moment().add(1, 'days')],
            'Tomorrow':[moment().add(1, 'days'),
-                       moment().add(1, 'days')], 
-           'This week':[moment(), moment().endOf('week')],
+                       moment().add(2, 'days')],
+           'This week':[moment(), moment().endOf('week').add(1, 'days')],
            'Next week':[moment().add(7, 'days').startOf('week'),
-                        moment().add(7, 'days').endOf('week')],
-           'This month':[moment(), moment().endOf('month')],
-           'Within two weeks':[moment(),moment().add(15, 'days')]
+                        moment().add(7, 'days').endOf('week').add(1, 'days')],
+           'This month':[moment(), moment().endOf('month').add(1, 'days')],
+           'Within two weeks':[moment(),moment().add(16, 'days')]
         }}
        );
     });
   </script>
 
-<br /><input type="submit" value="Choose" />
+<input type="submit" value="Get Busy Times" />
 </form>
 
     <!--
     Show the calendar list (if we have it).  This will need to be turned into
     a form from which calendars can be picked. Up to three entries are
     shown in each row (but the order is across then down; I would
-    prefer down then across). 
+    prefer down then across).
     -->
+<br>
 {% if g.calendars is defined  %}
   <div class="row">
-  {% for cal in g.calendars if cal.selected %}
-          <div class="col-md-4">
-	   {{ cal.summary }}
-          </div>
-         {% if loop.index is divisibleby 3 %}
-          </div> <div class="row">
-         {% endif %}
-  {% endfor %}
+    {% for cal in g.calendars if cal.selected %}
+    <div class="col-md-12">
+      <h5>For calendar: {{ cal.summary }}</h5>
+      {% if cal.events|length == 0 %}
+        <p><i>No busy times in this calendar</i></p>
+      {% else %}
+        {% for i in range(cal.events|length) %}
+          <p><b>{{ cal.events[i]["dateString"] }}</b>
+            <br>
+          Event name: <b>{{ cal.events[i]["summary"] }}</b></p>
+        {% endfor %}
+      {% endif %}
+    </div>
+    {% endfor %}
   </div>
 {% endif %}
-    
 
-  </div>  <!-- container (for bootstrap) -->
+  </div>
   </body> </html>
