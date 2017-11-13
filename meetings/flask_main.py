@@ -35,7 +35,7 @@ app.logger.setLevel(logging.DEBUG)
 app.secret_key = CONFIG.SECRET_KEY
 
 SCOPES = 'https://www.googleapis.com/auth/calendar.readonly'
-CLIENT_SECRET_FILE = CONFIG.GOOGLE_LICENSE_KEY  # You'll need this
+CLIENT_SECRET_FILE = CONFIG.GOOGLE_KEY_FILE  # You'll need this
 APPLICATION_NAME = 'MeetMe class project'
 
 #############################
