@@ -35,7 +35,7 @@ app.logger.setLevel(logging.DEBUG)
 app.secret_key = CONFIG.SECRET_KEY
 
 SCOPES = 'https://www.googleapis.com/auth/calendar.readonly'
-CLIENT_SECRET_FILE = CONFIG.GOOGLE_KEY_FILE  # You'll need this
+CLIENT_SECRET_FILE = CONFIG.GOOGLE_LICENSE_KEY  # You'll need this
 APPLICATION_NAME = 'MeetMe class project'
 
 #############################
@@ -118,34 +118,74 @@ def list_events(service, calendars):
     while True:
       events = service.events().list(
           calendarId=calendar["id"], singleEvents=True, orderBy='startTime', pageToken=page_token, timeMin=flask.session['begin_date'], timeMax=flask.session['end_date']).execute()
-      for event in events["items"]:                                               # iterate through events
-        if ("transparency" in event and event["transparency"] == "transparent"):    # don't list transparent events
-          break
+      # iterate through events
+      for event in events["items"]:
+        add = True
+        # don't list transparent events
+        if ("transparency" in event and event["transparency"] == "transparent"):
+          add = False
         else:
-          id = event["id"]                                                          # event id and summary added no matter what
-          summary = event["summary"]
-                                                                                    # check type of event (dict varies based on this)
-          if "date" in event["start"]:                                              # all day event
+          # check type of event (dict varies based on this)
+          # all day events will overlap working hours
+          if "date" in event["start"]:
             dateString = "All day: " + event["start"]["date"]
-          elif "dateTime" in event["start"]:                                        # event with start time/end time
-            start = event["start"]["dateTime"].replace("T", " at ")[:-9]            # format start/end time string for appropriate output
-            end = event["end"]["dateTime"].replace("T", " at ")[:-9]
-            dateString = start + " to " + end
+          # event with start time/end time
+          elif "dateTime" in event["start"]:
+            start = event["start"]["dateTime"]
+            end = event["end"]["dateTime"]
+            # check if event occurs during working hours
+            valid = during_workday(start, end)
+            if valid == True:
+              start = start.replace("T", " at ")[:-9]
+              end = end.replace("T", " at ")[:-9]
+              dateString = start + " to " + end
+            else:
+              add = False
           else:
-            raise Exception("unrecognized dataTime format")
+            raise Exception("unrecognized dateTime format")
 
-        calendar_result.append(                                                     # add dictionary elements to event
-            {"id": id,
-             "summary": summary,
-             "dateString": dateString
-             })
-      calendar["events"] = calendar_result                                          # add event info to appropriate key
-      # print(calendar_result)
-      # for i in range(len(calendar["events"])):
-      # print(calendar["events"][i]["summary"])
+        if add == True:  # set dict vals and append
+          id = event["id"]
+          summary = event["summary"]
+          calendar_result.append(
+              {"id": id,
+               "summary": summary,
+               "dateString": dateString
+               })
+          # add event info to appropriate key
+          calendar["events"] = calendar_result
       page_token = events.get('nextPageToken')
       if not page_token:
         break
+
+
+def during_workday(start, end):
+  """
+  Check if event busy time overlaps the workday
+  Three cases where even doesn't overlap 9 to 5 period:
+    start and end both before 9
+    start and end both after 5
+    start after 5 and end before 5 and date increment only one day
+  """
+  event_start_time = arrow.get(start).format("HH")
+  event_end_time = arrow.get(end).format("HH")
+  begin_time = arrow.get(flask.session["begin_time"])
+  begin_time = begin_time.format("HH")
+  end_time = arrow.get(flask.session["end_time"]).format("HH")
+
+  event_start_date = arrow.get(start).format("YYYY-MM-DD")
+  shifted_start_date = arrow.get(start).shift(days=1).format("YYYY-MM-DD")
+  event_end_date = arrow.get(end).format("YYYY-MM-DD")
+
+  # Don't add events that occur outside of working hours
+  # case 1: event that occurs before working hours
+  # case 2: event that occurs after working hours
+  # case 3: overnight event that occurs between working hours of two days
+
+  if (event_start_time < begin_time and event_end_time < begin_time and event_start_date == event_end_date) or (event_start_time > end_time and event_end_time > end_time and event_start_date == event_end_date) or (event_start_time > end_time and event_end_time < begin_time and shifted_start_date == event_end_date):  # don't want these events
+    return False
+  else:
+    return True
 
 ####
 #
@@ -279,8 +319,11 @@ def setrange():
 
   flask.session['daterange'] = daterange
   daterange_parts = daterange.split()
-  flask.session['begin_date'] = interpret_date(daterange_parts[0])
-  flask.session['end_date'] = interpret_date(daterange_parts[2])
+  app.logger.debug(daterange_parts[0])
+  app.logger.debug(daterange_parts[1])
+  app.logger.debug(daterange_parts[2])
+  flask.session['begin_date'] = interpret_date(daterange_parts[0], False)
+  flask.session['end_date'] = interpret_date(daterange_parts[2], True)
   app.logger.debug("Setrange parsed {} - {}  dates as {} - {}".format(
       daterange_parts[0], daterange_parts[1],
       flask.session['begin_date'], flask.session['end_date']))
@@ -340,14 +383,17 @@ def interpret_time(text):
   # on raspberry Pi --- failure is likely due to 32-bit integers on that platform)
 
 
-def interpret_date(text):
+def interpret_date(text, shift):
   """
   Convert text of date to ISO format used internally,
   with the local time zone.
+  Shift takes a boolean. Used to shift the end day so we actually search the proper time range. With the shift, a time range that reads 11/11/17 - 11/11/17 will actually span from 00:00 to 24:00. Original implementation would not span any time, as it was being interpreted as 00:00 to 00:00 on 11/17.
   """
   try:
     as_arrow = arrow.get(text, "MM/DD/YYYY").replace(
         tzinfo=tz.tzlocal())
+    if shift == True:
+      as_arrow = as_arrow.shift(days=1)
   except:
     flask.flash("Date '{}' didn't fit expected format 12/31/2001")
     raise

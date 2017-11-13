@@ -43,16 +43,17 @@
   -- they appear above the rest of the content, just until the next
   -- action.
   -->
-
-{% with messages = get_flashed_messages() %}
-  {% if messages %}
-    <ul class=flashes>
-    {% for message in messages %}
-      <li>{{ message }}</li>
-    {% endfor %}
-    </ul>
-  {% endif %}
-{% endwith %}
+<!--
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      <ul class=flashes>
+      {% for message in messages %}
+        <li>{{ message }}</li>
+      {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
+-->
 
 <h4>Date range</h4>
   <form action="/setrange" method="post">
@@ -67,14 +68,14 @@
   $(function() {
   $('input[name="daterange"]').daterangepicker(
     {    ranges: {
-           'Today': [moment(), moment().add(1, 'days')],
+           'Today': [moment(), moment()],
            'Tomorrow':[moment().add(1, 'days'),
-                       moment().add(2, 'days')],
-           'This week':[moment(), moment().endOf('week').add(1, 'days')],
+                       moment().add(1, 'days')],
+           'This week':[moment(), moment().endOf('week')],
            'Next week':[moment().add(7, 'days').startOf('week'),
-                        moment().add(7, 'days').endOf('week').add(1, 'days')],
-           'This month':[moment(), moment().endOf('month').add(1, 'days')],
-           'Within two weeks':[moment(),moment().add(16, 'days')]
+                        moment().add(7, 'days').endOf('week')],
+           'This month':[moment(), moment().endOf('month')],
+           'Within two weeks':[moment(),moment().add(15, 'days')]
         }}
        );
     });
