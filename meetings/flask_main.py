@@ -128,7 +128,13 @@ def list_events(service, calendars):
           # check type of event (dict varies based on this)
           # all day events will overlap working hours
           if "date" in event["start"]:
-            dateString = "All day: " + event["start"]["date"]
+            start = arrow.get(event["start"]["date"]).format("MM/DD/YYYY")
+            end = arrow.get(event["end"]["date"]).shift(
+                days=-1).format("MM/DD/YYYY")
+            if start == end:
+              dateString = "All day on " + start
+            else:
+              dateString = "From " + start + " to " + end
           # event with start time/end time
           elif "dateTime" in event["start"]:
             start = event["start"]["dateTime"]
@@ -136,8 +142,13 @@ def list_events(service, calendars):
             # check if event occurs during working hours
             valid = during_workday(start, end)
             if valid == True:
-              start = start.replace("T", " at ")[:-9]
-              end = end.replace("T", " at ")[:-9]
+              start_date = arrow.get(start).format("MM/DD/YYYY")
+              end_date = arrow.get(end).format("MM/DD/YYYY")
+              if start_date == end_date:                        #prints as MM/DD/YYYY TT:TT to TT:TT
+                end = arrow.get(end).format("HH:mm")
+              else:                                             #prints as MM/DD/YYY TT:TT to MM/DD/YYYY TT:TT
+                end = arrow.get(end).format("MM/DD/YYYY HH:mm")
+              start = arrow.get(start).format("MM/DD/YYYY HH:mm")
               dateString = start + " to " + end
             else:
               add = False
