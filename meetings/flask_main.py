@@ -144,9 +144,9 @@ def list_events(service, calendars):
             if valid == True:
               start_date = arrow.get(start).format("MM/DD/YYYY")
               end_date = arrow.get(end).format("MM/DD/YYYY")
-              if start_date == end_date:                        #prints as MM/DD/YYYY TT:TT to TT:TT
+              if start_date == end_date:  # prints as MM/DD/YYYY TT:TT to TT:TT
                 end = arrow.get(end).format("HH:mm")
-              else:                                             #prints as MM/DD/YYY TT:TT to MM/DD/YYYY TT:TT
+              else:  # prints as MM/DD/YYY TT:TT to MM/DD/YYYY TT:TT
                 end = arrow.get(end).format("MM/DD/YYYY HH:mm")
               start = arrow.get(start).format("MM/DD/YYYY HH:mm")
               dateString = start + " to " + end
@@ -324,6 +324,14 @@ def setrange():
   widget.
   """
   app.logger.debug("Entering setrange")
+  # setting working hours
+  start_num = request.form.get('start_num')
+  start_ampm = request.form.get('start_ampm')
+  end_num = request.form.get('end_num')
+  end_ampm = request.form.get('end_ampm')
+  flask.session["begin_time"] = interpret_time(start_num + start_ampm)
+  flask.session["end_time"] = interpret_time(end_num + end_ampm)
+
   flask.flash("Setrange gave us '{}'".format(
       request.form.get('daterange')))
   daterange = request.form.get('daterange')

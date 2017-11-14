@@ -5,7 +5,7 @@
 Takes a user's Google Calendars and lists all events that occur (even partially) between 9am and 5pm (these "working hours" times are currently hardcoded). Each calendar's events are listed under its calendar's name.
 
 ### Features ###
-Type in your preferred date range. All corresponding events during that range will occur, giving you all the times you are busy between "working hours".
+Type in your preferred date range. All corresponding events during that range will occur, giving you all the times you are busy between your selected "working hours".
 
 ### Running ###
 Go to folder you want to download on the command line.
