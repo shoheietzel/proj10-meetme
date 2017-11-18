@@ -329,8 +329,10 @@ def setrange():
   start_ampm = request.form.get('start_ampm')
   end_num = request.form.get('end_num')
   end_ampm = request.form.get('end_ampm')
-  flask.session["begin_time"] = interpret_time(start_num + start_ampm)
-  flask.session["end_time"] = interpret_time(end_num + end_ampm)
+  flask.session["begin_time"] = arrow.get(
+      interpret_time(start_num + start_ampm)).format("HH")
+  flask.session["end_time"] = arrow.get(
+      interpret_time(end_num + end_ampm)).format("HH")
 
   flask.flash("Setrange gave us '{}'".format(
       request.form.get('daterange')))
@@ -368,8 +370,8 @@ def init_session_values():
       tomorrow.format("MM/DD/YYYY"),
       nextweek.format("MM/DD/YYYY"))
   # Default time span each day, 9 to 5
-  flask.session["begin_time"] = interpret_time("9am")
-  flask.session["end_time"] = interpret_time("5pm")
+  flask.session["begin_time"] = arrow.get(interpret_time("9am")).format("HH")
+  flask.session["end_time"] = arrow.get(interpret_time("5pm")).format("HH")
 
 
 def interpret_time(text):

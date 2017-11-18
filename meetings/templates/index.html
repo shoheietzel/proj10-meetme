@@ -55,10 +55,10 @@
     {% endif %}
   {% endwith %}
 -->
-<h4>Date range and Working Hours Selector</h4>
 <form action="/setrange" method="post">
   Start time:
     <select name=start_num>
+      <option value="9" selected>Choose...</option>
       <option value="12">12</option>
       <option value="1">1</option>
       <option value="2">2</option>
@@ -68,23 +68,24 @@
       <option value="6">6</option>
       <option value="7">7</option>
       <option value="8">8</option>
-      <option value="9" selected = "selected">9</option>
+      <option value="9">9</option>
       <option value="10">10</option>
       <option value="11">11</option>
     </select>
     <select name=start_ampm>
-      <option value="am" selected = "selected">am</option>
+      <option value="am" selected>am</option>
       <option value="pm">pm</option>
     </select>
     <br>
     End time:
     <select name=end_num>
+      <option value="5" selected>Choose...</option>
       <option value="12">12</option>
       <option value="1">1</option>
       <option value="2">2</option>
       <option value="3">3</option>
       <option value="4">4</option>
-      <option selected = "selected" value="5">5</option>
+      <option value="5">5</option>
       <option value="6">6</option>
       <option value="7">7</option>
       <option value="8">8</option>
@@ -94,7 +95,7 @@
     </select>
     <select name=end_ampm>
       <option value="am">am</option>
-      <option value="pm" selected="selected">pm</option>
+      <option value="pm" selected>pm</option>
     </select>
     <br>
   <input type="text" name="daterange" size="12"
@@ -130,6 +131,8 @@
     shown in each row (but the order is across then down; I would
     prefer down then across).
     -->
+
+<h4> Working hours: {{ session.begin_time }}:00 to {{ session.end_time }}:00 </h4>
 <br>
 {% if g.calendars is defined  %}
   <div class="row">
