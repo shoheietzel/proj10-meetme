@@ -35,7 +35,7 @@
 <body>
 <div class="container">
 
-<h2>Google Calendar Busy Times</h2>
+<h2>Google Calendar Free Times</h2>
 <p><i>*Busy times during "working hours"</i></p>
 <br>
 
@@ -59,7 +59,7 @@
   Start time:
     <select name=start_num>
       <option value="9" selected>Choose...</option>
-      <option value="12">12</option>
+      <option value="0">0</option>
       <option value="1">1</option>
       <option value="2">2</option>
       <option value="3">3</option>
@@ -71,16 +71,25 @@
       <option value="9">9</option>
       <option value="10">10</option>
       <option value="11">11</option>
+      <option value="12">12</option>
+      <option value="13">13</option>
+      <option value="14">14</option>
+      <option value="15">15</option>
+      <option value="16">16</option>
+      <option value="17">17</option>
+      <option value="18">18</option>
+      <option value="19">19</option>
+      <option value="20">20</option>
+      <option value="21">21</option>
+      <option value="22">22</option>
+      <option value="23">23</option>
     </select>
-    <select name=start_ampm>
-      <option value="am" selected>am</option>
-      <option value="pm">pm</option>
-    </select>
+
     <br>
     End time:
     <select name=end_num>
-      <option value="5" selected>Choose...</option>
-      <option value="12">12</option>
+      <option value="17" selected>Choose...</option>
+      <option value="0">0</option>
       <option value="1">1</option>
       <option value="2">2</option>
       <option value="3">3</option>
@@ -92,10 +101,18 @@
       <option value="9">9</option>
       <option value="10">10</option>
       <option value="11">11</option>
-    </select>
-    <select name=end_ampm>
-      <option value="am">am</option>
-      <option value="pm" selected>pm</option>
+      <option value="12">12</option>
+      <option value="13">13</option>
+      <option value="14">14</option>
+      <option value="15">15</option>
+      <option value="16">16</option>
+      <option value="17">17</option>
+      <option value="18">18</option>
+      <option value="19">19</option>
+      <option value="20">20</option>
+      <option value="21">21</option>
+      <option value="22">22</option>
+      <option value="23">23</option>
     </select>
     <br>
   <input type="text" name="daterange" size="12"
@@ -122,7 +139,7 @@
     });
   </script>
 
-<input type="submit" value="Get Busy Times" />
+<input type="submit" value="Get Free Times" />
 </form>
 
     <!--
@@ -136,22 +153,32 @@
 <br>
 {% if g.calendars is defined  %}
   <div class="row">
-    {% for cal in g.calendars if cal.selected %}
     <div class="col-md-12">
-      <h5>For calendar: {{ cal.summary }}</h5>
-      {% if cal.events|length == 0 %}
-        <p><i>No busy times in this calendar</i></p>
+      <h3> Busy times </h3>
+      {% if g.all_events|length == 0 %}
+        <p><i>No busy times</i></p>
       {% else %}
-        {% for i in range(cal.events|length) %}
-          <p><b>{{ cal.events[i]["dateString"] }}</b>
-            <br>
-          Event name: <b>{{ cal.events[i]["summary"] }}</b></p>
+        {% for i in range(g.all_events|length) %}
+          <p><b>{{ g.all_events[i]["start"] }}</b>
+          <br>
+          <b>{{ g.all_events[i]["end"] }}</b></p>
         {% endfor %}
       {% endif %}
     </div>
-    {% endfor %}
   </div>
 {% endif %}
 
+{% if g.free_times is defined %}
+  <div class="row">
+    <div class="col-md-12">
+      <h3> Free times </h3>
+      {% for i in range(g.free_times|length) %}
+        <p><b>{{ g.free_times[i]["start"] }}</b>
+        <br>
+        <b>{{ g.free_times[i]["end"] }}</b></p>
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}
   </div>
   </body> </html>
