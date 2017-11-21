@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 
 def test_1():
     """
-    trivial cases: return daily_avail if no events
+    trivial cases: daily_avail shouldn't change if no events
 
     """
     events = []
@@ -27,7 +27,7 @@ def test_1():
 
 def test_2():
     """
-    Tests for all-day event, should be no available times
+    Tests for all-day event, daily_avail should not have any times
     """
     events = [{'start': "2017-11-13T00:00:00-08:00",
                'end': "2017-11-14T00:00:00-08:00", 'summary': 'An all day event'}]
@@ -95,4 +95,4 @@ def test_5():
     daily_avail = [{'start': "2017-11-13T00:00:00-08:00",
                     'end': "2017-11-13T23:59:00-08:00"}]
     assert avail_times.get_free_times(events, daily_avail) == [{'start': '2017-11-13T00:00:00-08:00', 'end': '2017-11-13T04:00:00-08:00'}, {'start': '2017-11-13T06:00:00-08:00', 'end': '2017-11-13T08:00:00-08:00'}, {'start': '2017-11-13T10:00:00-08:00', 'end': '2017-11-13T12:00:00-08:00'},
-                                                               {'start': '2017-11-13T14:00:00-08:00', 'end': '2017-11-13T16:00:00-08:00'}, {'start': '2017-11-13T18:00:00-08:00', 'end': '2017-11-13T20:00:00-08:00'}, {'start': '2017-11-13T22:00:00-08:00', 'end': '2017-11-13T23:59:00-08:00'}, ]
+        {'start': '2017-11-13T14:00:00-08:00', 'end': '2017-11-13T16:00:00-08:00'}, {'start': '2017-11-13T18:00:00-08:00', 'end': '2017-11-13T20:00:00-08:00'}, {'start': '2017-11-13T22:00:00-08:00', 'end': '2017-11-13T23:59:00-08:00'}, ]
