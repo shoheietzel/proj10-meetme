@@ -1,6 +1,6 @@
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
 <html lang="en"> <head>
-<title>Appointments</title>
+<title>Free Times</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <link rel="stylesheet" type="text/css"
@@ -36,7 +36,6 @@
 <div class="container">
 
 <h2>Google Calendar Free Times</h2>
-<p><i>*Busy times during "working hours"</i></p>
 <br>
 
 <!--
@@ -58,61 +57,63 @@
 <form action="/setrange" method="post">
   Start time:
     <select name=start_num>
-      <option value="9" selected>Choose...</option>
-      <option value="0">0</option>
-      <option value="1">1</option>
-      <option value="2">2</option>
-      <option value="3">3</option>
-      <option value="4">4</option>
-      <option value="5">5</option>
-      <option value="6">6</option>
-      <option value="7">7</option>
-      <option value="8">8</option>
-      <option value="9">9</option>
-      <option value="10">10</option>
-      <option value="11">11</option>
-      <option value="12">12</option>
-      <option value="13">13</option>
-      <option value="14">14</option>
-      <option value="15">15</option>
-      <option value="16">16</option>
-      <option value="17">17</option>
-      <option value="18">18</option>
-      <option value="19">19</option>
-      <option value="20">20</option>
-      <option value="21">21</option>
-      <option value="22">22</option>
-      <option value="23">23</option>
+      <option value="09:00" selected>Choose...</option>
+      <option value="00:00">0</option>
+      <option value="01:00">1</option>
+      <option value="02:00">2</option>
+      <option value="03:00">3</option>
+      <option value="04:00">4</option>
+      <option value="05:00">5</option>
+      <option value="06:00">6</option>
+      <option value="07:00">7</option>
+      <option value="08:00">8</option>
+      <option value="09:00">9</option>
+      <option value="10:00">10</option>
+      <option value="11:00">11</option>
+      <option value="12:00">12</option>
+      <option value="13:00">13</option>
+      <option value="14:00">14</option>
+      <option value="15:00">15</option>
+      <option value="16:00">16</option>
+      <option value="17:00">17</option>
+      <option value="18:00">18</option>
+      <option value="19:00">19</option>
+      <option value="20:00">20</option>
+      <option value="21:00">21</option>
+      <option value="22:00">22</option>
+      <option value="23:00">23</option>
+      <option value="23:59">24</option>
     </select>
 
     <br>
     End time:
     <select name=end_num>
-      <option value="17" selected>Choose...</option>
-      <option value="0">0</option>
-      <option value="1">1</option>
-      <option value="2">2</option>
-      <option value="3">3</option>
-      <option value="4">4</option>
-      <option value="5">5</option>
-      <option value="6">6</option>
-      <option value="7">7</option>
-      <option value="8">8</option>
-      <option value="9">9</option>
-      <option value="10">10</option>
-      <option value="11">11</option>
-      <option value="12">12</option>
-      <option value="13">13</option>
-      <option value="14">14</option>
-      <option value="15">15</option>
-      <option value="16">16</option>
-      <option value="17">17</option>
-      <option value="18">18</option>
-      <option value="19">19</option>
-      <option value="20">20</option>
-      <option value="21">21</option>
-      <option value="22">22</option>
-      <option value="23">23</option>
+      <option value="17:00" selected>Choose...</option>
+      <option value="00:00">0</option>
+      <option value="01:00">1</option>
+      <option value="02:00">2</option>
+      <option value="03:00">3</option>
+      <option value="04:00">4</option>
+      <option value="05:00">5</option>
+      <option value="06:00">6</option>
+      <option value="07:00">7</option>
+      <option value="08:00">8</option>
+      <option value="09:00">9</option>
+      <option value="10:00">10</option>
+      <option value="11:00">11</option>
+      <option value="12:00">12</option>
+      <option value="13:00">13</option>
+      <option value="14:00">14</option>
+      <option value="15:00">15</option>
+      <option value="16:00">16</option>
+      <option value="17:00">17</option>
+      <option value="18:00">18</option>
+      <option value="19:00">19</option>
+      <option value="20:00">20</option>
+      <option value="21:00">21</option>
+      <option value="22:00">22</option>
+      <option value="23:00">23</option>
+      <option value="23:59">24</option>
     </select>
     <br>
   <input type="text" name="daterange" size="12"
@@ -149,36 +150,37 @@
     prefer down then across).
     -->
 
-<h4> Working hours: {{ session.display_begin_time }}:00 to {{ session.display_end_time }}:00 </h4>
+<h4> Working hours: {{ session.display_begin_time }} to {{ session.display_end_time }} </h4>
 <br>
+
+{% if g.daily_availability is defined %}
+  <div class="row">
+    <div class="col-md-12">
+      <h3> Free times </h3>
+      {% for i in range(g.daily_availability_formatted|length) %}
+        <p><b>{{ g.daily_availability_formatted[i] }}</b></p>
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}
+
+<br>
+
 {% if g.calendars is defined  %}
   <div class="row">
     <div class="col-md-12">
       <h3> Busy times </h3>
-      {% if g.all_events|length == 0 %}
+      {% if g.all_events_formatted|length == 0 %}
         <p><i>No busy times</i></p>
       {% else %}
-        {% for i in range(g.all_events|length) %}
-          <p><b>{{ g.all_events[i]["start"] }}</b>
-          <br>
-          <b>{{ g.all_events[i]["end"] }}</b></p>
+        {% for i in range(g.all_events_formatted|length) %}
+          <p><b>{{ g.all_events_formatted[i] }}</b></p>
         {% endfor %}
       {% endif %}
     </div>
   </div>
 {% endif %}
 
-{% if g.free_times is defined %}
-  <div class="row">
-    <div class="col-md-12">
-      <h3> Free times </h3>
-      {% for i in range(g.free_times|length) %}
-        <p><b>{{ g.free_times[i]["start"] }}</b>
-        <br>
-        <b>{{ g.free_times[i]["end"] }}</b></p>
-      {% endfor %}
-    </div>
-  </div>
-{% endif %}
+
   </div>
   </body> </html>
