@@ -312,6 +312,7 @@ def init_session_values():
   Start with some reasonable defaults for date and time ranges.
   Note this must be run in app context ... can't call from main.
   """
+  app.logger.debug("entering init_session_values")
   # Default date span = tomorrow to 1 week from now
   now = arrow.now('local')     # We really should be using tz from browser
   tomorrow = now.replace(days=+1)
@@ -330,6 +331,7 @@ def init_session_values():
   flask.session["display_end_time"] = arrow.get(
       flask.session["end_time"]).format("HH:mm")
   flask.session["time_zone"] = "US/Pacific"
+  app.logger.debug(flask.session["time_zone"])
 
 
 ####
