@@ -1,10 +1,10 @@
 # Local
 secrets/*
-client_secret.json
-CONFIG.py
+# client_secret.json (taken out)
+# CONFIG.py (taken out)
 node_modules
 static/js/*.min.js
-.goog_app_key.json
+# .goog_app_key.json (taken out)
 *~
 .DS_Store
 
