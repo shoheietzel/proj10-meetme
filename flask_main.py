@@ -64,6 +64,7 @@ def choose():
     'return'
   """
   app.logger.debug("Checking credentials for Google calendar access")
+  init_session_values()
   credentials = valid_credentials()
   if not credentials:
     app.logger.debug("Redirecting to authorization")
