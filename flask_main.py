@@ -255,7 +255,7 @@ def list_daily_availability():
   time_end_min= arrow.get(flask.session["end_time"]).format('mm')
 
                                      # 11/12 - 11/26
-  while date_start < date_end:  # 11/12 9am - 11/26 9am
+  while date_start <= date_end:  # 11/12 9am - 11/26 9am
     start= date_start.shift(hours=int(time_start), minutes=int(time_start_min)).replace(tzinfo=tz.tzlocal())
     end= date_start.shift(hours=int(time_end), minutes=int(time_end_min)).replace(tzinfo=tz.tzlocal())
     daily_avail_list.append({
