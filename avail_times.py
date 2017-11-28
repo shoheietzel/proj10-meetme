@@ -18,7 +18,7 @@ def get_free_times(all_events, daily_avail):
                 new_daily_avail.append(free_block)
             # Case B: cur event start time before cur free_block and cur event end time during free_block
                 # free_block start time now equals event end time
-            elif (event["start"] < free_block["start"]) and (event["end"] > free_block["start"]) and (event["end"] < free_block["end"]):
+            elif (event["start"] <= free_block["start"]) and (event["end"] > free_block["start"]) and (event["end"] < free_block["end"]):
                 free_block["start"] = event["end"]
                 new_daily_avail.append(free_block)
             # Case C: cur event start time and end time during free_block
@@ -33,7 +33,7 @@ def get_free_times(all_events, daily_avail):
                 })
             # Case D: cur event start time during free_block and end time after free_block
                 # free_block end time = cur event start time
-            elif (event["start"] > free_block["start"]) and (event["start"] < free_block["end"]) and (event["end"] > free_block["end"]):
+            elif (event["start"] > free_block["start"]) and (event["start"] < free_block["end"]) and (event["end"] >= free_block["end"]):
                 free_block["end"] = event["start"]
                 new_daily_avail.append(free_block)
             # Case E: cur event start and end times after cur free_block
@@ -45,8 +45,7 @@ def get_free_times(all_events, daily_avail):
                 # nothing is done in this case; free_block is no longer free
                 continue
             else:
-                print(event["summary"], " with ",
-                      free_block["start"], " ", free_block["end"])
-                raise Exception("invalid event format while checking")
+                raise Exception("invalid event format while checking", event["summary"], " with ",
+                                free_block["start"], " ", free_block["end"])
         daily_avail = new_daily_avail
     return daily_avail

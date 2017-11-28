@@ -198,7 +198,8 @@ def list_events(service, calendars):
             raise Exception("unrecognized dateTime format")
 
         if add == True:  # set dict vals and append
-          summary = event["summary"]
+          if 'summary' in event:
+            summary = event["summary"]
           all_events_list.append(
               {"start": start,
                "end": end,
