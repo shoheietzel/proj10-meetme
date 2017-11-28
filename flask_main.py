@@ -89,14 +89,14 @@ def choose():
   app.logger.debug("flask.g.daily_availability")
   app.logger.debug(flask.g.daily_availability)
 
-  flask.g.all_events_formatted = organize_times(flask.g.all_events)
+  flask.g.all_events_formatted = organize_times(flask.g.all_events, True)
   flask.g.daily_availability_formatted = organize_times(
-      flask.g.daily_availability)
+      flask.g.daily_availability, False)
 
   return render_template('index.html')
 
 
-def organize_times(event_list):
+def organize_times(event_list, add_summary):
   """
  sort in order, format for printing
   """
@@ -109,9 +109,23 @@ def organize_times(event_list):
     start_date = arrow.get(event["start"]).format("MM/DD/YYYY")
     end_date = arrow.get(event["end"]).format("MM/DD/YYYY")
     if start_date == end_date:
-      date_string_list.append(start_date + ": " + start + " to " + end)
+      date_string = start_date + ": " + start + " to " + end
+      if add_summary == True:
+        date_string_list.append({
+          "date_string": date_string,
+          "summary": event['summary']
+        })
+      else:
+        date_string_list.append(date_string)
     else:
-      date_string_list.append(start_date + ": " + start + " to " + end_date + ": " + end)
+      date_string = start_date + ": " + start + " to " + end_date + ": " + end
+      if add_summary == True:
+        date_string_list.append({
+          "date_string": date_string,
+          "summary": event['summary']
+        })
+      else:
+        date_string_list.append(date_string)
   return date_string_list
 
 

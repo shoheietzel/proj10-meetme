@@ -180,8 +180,8 @@
         <p><i>No busy times</i></p>
       {% else %}
         {% for i in range(g.all_events_formatted|length) %}
-          <!--p><b>{{ g.all_events_formatted[i]['summary'] }}</b></p>-->
-          <p><b>{{ g.all_events_formatted[i]}}</b></p>
+          <p><b>{{ g.all_events_formatted[i]['summary'] }}</b></p>
+          <p><b>{{ g.all_events_formatted[i]['date_string']}}</b></p>
         {% endfor %}
       {% endif %}
     </div>
