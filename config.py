@@ -21,7 +21,7 @@ Potential extensions:
     to configuration files? (NO, for now)
 """
 
-import configparser
+import ConfigParser
 import argparse
 import os
 import logging
