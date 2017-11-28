@@ -1,5 +1,5 @@
 #
-#  Project 7: Pull Google calendar events 
+#  Project 10: MeetMe
 
 ##############
 #  Virtual environment
@@ -19,10 +19,10 @@ env:
 #  with debugging turned on unless it is unset in CONFIG.py
 # 
 run:	env
-	($(INVENV) cd meetings; python3 flask_main.py) ||  true
+	($(INVENV) python3 flask_main.py) ||  true
 
 test:	env
-	$(INVENV) cd meetings; nosetests
+	$(INVENV) nosetests
 
 
 ##

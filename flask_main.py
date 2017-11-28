@@ -73,6 +73,7 @@ def choose():
   gcal_service = get_gcal_service(credentials)
   app.logger.debug("Returned from get_gcal_service")
   flask.g.calendars = list_calendars(gcal_service)
+  app.logger.debug(flask.g.calendars)
 
   flask.g.all_events = list_events(gcal_service, flask.g.calendars)
   flask.g.daily_availability = list_daily_availability()
@@ -159,6 +160,7 @@ def list_events(service, calendars):
     while True:
       events = service.events().list(
           calendarId=calendar["id"], singleEvents=True, orderBy='startTime', pageToken=page_token, timeMin=flask.session['begin_date'], timeMax=flask.session['end_date']).execute()
+      app.logger.debug(events)
       # iterate through events
       for event in events["items"]:
         add = True
