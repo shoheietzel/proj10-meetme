@@ -14,9 +14,9 @@ variables.  To resolve this conflict, we convert all configuration
 variables from .ini files to upper case.
 
 Potential extensions:
-  - Really need to factor out the parts that are unique for a 
-    project ... but that includes some documentation.  Maybe 
-    just the command line parsing part? 
+  - Really need to factor out the parts that are unique for a
+    project ... but that includes some documentation.  Maybe
+    just the command line parsing part?
   - Use environment variables?  With what precedence relative
     to configuration files? (NO, for now)
 """
@@ -87,7 +87,7 @@ def config_file_args(config_file_paths, project=None):
     return args
 
 
-def imply_types(ns: dict):
+def imply_types(ns):
     """Convert values to implied types.  We assume that strings of
     digits should be integers, and True/False (with any casing) should
     be boolean. """
