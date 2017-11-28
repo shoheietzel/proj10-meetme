@@ -39,7 +39,8 @@
 <br>
 <p><i><b>Step 1:</b> Choose your workings hours(or use the default times)</i></p>
 <p><i><b>Step 2:</b> Choose your date range</i></p>
-<p><i><b>Step 3:</b> Click "Get Free Times" to show your open times
+<p><i><b>Step 3:</b> Choose your time zone</i></p>
+<p><i><b>Step 4:</b> Click "Get Free Times" to show your open times
     (Logging into your Google Account may be required for first time users)</i></p>
 
 <!--
@@ -120,7 +121,13 @@
       <option value="23:59">24</option>
     </select>
     <i>Default: 17:00</i>
-
+    <br>
+        Time Zone:
+    <select name=time_zone>
+      <option value="US/Pacific" selected>Choose...</option>
+      <option value="US/Pacific">US/Pacific</option>
+    </select>
+    <i>Default: US/Pacific</i>
     <br>
   <input type="text" name="daterange" size="12"
     {% if session.daterange is defined %}

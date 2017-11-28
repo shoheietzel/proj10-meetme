@@ -185,8 +185,8 @@ def list_events(service, calendars):
           # check type of event (dict varies based on this)
           # all day events will overlap working hours
           if "date" in event["start"]:
-            start = arrow.get(event["start"]["date"]).replace(tzinfo='local')
-            end = arrow.get(event["end"]["date"]).replace(tzinfo='local')
+            start = arrow.get(event["start"]["date"]).replace(tzinfo=flask.session["time_zone"])
+            end = arrow.get(event["end"]["date"]).replace(tzinfo=flask.session["time_zone"])
           # event with start time/end time
           elif "dateTime" in event["start"]:
             start = arrow.get(event["start"]["dateTime"])
@@ -240,29 +240,29 @@ def during_workday(start, end):
     return True
 
 
-
-
 def list_daily_availability():
   """
   creates a dict of free times that we can compare our busy times against
   """
-  daily_avail_list= []
-  date_start= arrow.get(flask.session['begin_date'])
-  date_end= arrow.get(flask.session['end_date']).shift(days=-1)
-  time_start= arrow.get(flask.session["begin_time"]).format('HH')
-  time_end= arrow.get(flask.session["end_time"]).format('HH')
-  time_start_min= arrow.get(flask.session["begin_time"]).format('mm')
-  time_end_min= arrow.get(flask.session["end_time"]).format('mm')
+  daily_avail_list = []
+  date_start = arrow.get(flask.session['begin_date'])
+  date_end = arrow.get(flask.session['end_date']).shift(days=-1)
+  time_start = arrow.get(flask.session["begin_time"]).format('HH')
+  time_end = arrow.get(flask.session["end_time"]).format('HH')
+  time_start_min = arrow.get(flask.session["begin_time"]).format('mm')
+  time_end_min = arrow.get(flask.session["end_time"]).format('mm')
 
                                      # 11/12 - 11/26
   while date_start <= date_end:  # 11/12 9am - 11/26 9am
-    start= date_start.shift(hours=int(time_start), minutes=int(time_start_min)).replace(tzinfo=tz.tzlocal())
-    end= date_start.shift(hours=int(time_end), minutes=int(time_end_min)).replace(tzinfo=tz.tzlocal())
+    start = date_start.shift(hours=int(time_start), minutes=int(
+        time_start_min)).replace(tzinfo=flask.session["time_zone"])
+    end = date_start.shift(hours=int(time_end), minutes=int(
+        time_end_min)).replace(tzinfo=flask.session["time_zone"])
     daily_avail_list.append({
         "start": start,
         "end": end
     })
-    date_start= arrow.get(next_day(date_start))
+    date_start = arrow.get(next_day(date_start))
   return daily_avail_list
 
 #####
@@ -276,26 +276,27 @@ def setrange():
   """
   app.logger.debug("Entering setrange")
   # setting working hours
-  start_num= request.form.get('start_num')
-  end_num= request.form.get('end_num')
-  flask.session["begin_time"]= interpret_time(start_num)
-  flask.session["end_time"]= interpret_time(end_num)
-  flask.session["display_begin_time"]= arrow.get(
+  start_num = request.form.get('start_num')
+  end_num = request.form.get('end_num')
+  flask.session["time_zone"] = request.form.get('time_zone')
+  flask.session["begin_time"] = interpret_time(start_num)
+  flask.session["end_time"] = interpret_time(end_num)
+  flask.session["display_begin_time"] = arrow.get(
       flask.session["begin_time"]).format("HH:mm")
-  flask.session["display_end_time"]= arrow.get(
+  flask.session["display_end_time"] = arrow.get(
       flask.session["end_time"]).format("HH:mm")
 
   flask.flash("Setrange gave us '{}'".format(
       request.form.get('daterange')))
-  daterange= request.form.get('daterange')
+  daterange = request.form.get('daterange')
 
-  flask.session['daterange']= daterange
-  daterange_parts= daterange.split()
+  flask.session['daterange'] = daterange
+  daterange_parts = daterange.split()
   app.logger.debug(daterange_parts[0])
   app.logger.debug(daterange_parts[1])
   app.logger.debug(daterange_parts[2])
-  flask.session['begin_date']= interpret_date(daterange_parts[0], False)
-  flask.session['end_date']= interpret_date(daterange_parts[2], True)
+  flask.session['begin_date'] = interpret_date(daterange_parts[0], False)
+  flask.session['end_date'] = interpret_date(daterange_parts[2], True)
   app.logger.debug("Setrange parsed {} - {}  dates as {} - {}".format(
       daterange_parts[0], daterange_parts[1],
       flask.session['begin_date'], flask.session['end_date']))
@@ -313,22 +314,23 @@ def init_session_values():
   Note this must be run in app context ... can't call from main.
   """
   # Default date span = tomorrow to 1 week from now
-  now= arrow.now('local')     # We really should be using tz from browser
-  tomorrow= now.replace(days=+1)
-  nextweek= now.replace(days=+7)
-  flask.session["begin_date"]= tomorrow.floor('day').isoformat()
-  flask.session["end_date"]= nextweek.ceil('day').isoformat()
-  flask.session["daterange"]= "{} - {}".format(
+  now = arrow.now('local')     # We really should be using tz from browser
+  tomorrow = now.replace(days=+1)
+  nextweek = now.replace(days=+7)
+  flask.session["begin_date"] = tomorrow.floor('day').isoformat()
+  flask.session["end_date"] = nextweek.ceil('day').isoformat()
+  flask.session["daterange"] = "{} - {}".format(
       tomorrow.format("MM/DD/YYYY"),
       nextweek.format("MM/DD/YYYY"))
   # Default time span each day, 9 to 5
-  flask.session["begin_time"]= interpret_time("9am")
-  flask.session["end_time"]= interpret_time("5pm")
+  flask.session["begin_time"] = interpret_time("9am")
+  flask.session["end_time"] = interpret_time("5pm")
   # flask session values formatted to display
-  flask.session["display_begin_time"]= arrow.get(
+  flask.session["display_begin_time"] = arrow.get(
       flask.session["begin_time"]).format("HH:mm")
-  flask.session["display_end_time"]= arrow.get(
+  flask.session["display_end_time"] = arrow.get(
       flask.session["end_time"]).format("HH:mm")
+  flask.session["time_zone"] = "US/Pacific"
 
 
 ####
@@ -369,7 +371,7 @@ def valid_credentials():
   if 'credentials' not in flask.session:
     return None
 
-  credentials= client.OAuth2Credentials.from_json(
+  credentials = client.OAuth2Credentials.from_json(
       flask.session['credentials'])
 
   if (credentials.invalid or
@@ -389,8 +391,8 @@ def get_gcal_service(credentials):
   Then the second call will succeed without additional authorization.
   """
   app.logger.debug("Entering get_gcal_service")
-  http_auth= credentials.authorize(httplib2.Http())
-  service= discovery.build('calendar', 'v3', http=http_auth)
+  http_auth = credentials.authorize(httplib2.Http())
+  service = discovery.build('calendar', 'v3', http=http_auth)
   app.logger.debug("Returning service")
   return service
 
@@ -405,7 +407,7 @@ def oauth2callback():
   and so on.
   """
   app.logger.debug("Entering oauth2callback")
-  flow= client.flow_from_clientsecrets(
+  flow = client.flow_from_clientsecrets(
       CLIENT_SECRET_FILE,
       scope=SCOPES,
       redirect_uri=flask.url_for('oauth2callback', _external=True))
@@ -419,7 +421,7 @@ def oauth2callback():
   app.logger.debug("Got flow")
   if 'code' not in flask.request.args:
     app.logger.debug("Code not in flask.request.args")
-    auth_uri= flow.step1_get_authorize_url()
+    auth_uri = flow.step1_get_authorize_url()
     return flask.redirect(auth_uri)
     # This will redirect back here, but the second time through
     # we'll have the 'code' parameter set
@@ -427,9 +429,9 @@ def oauth2callback():
     # It's the second time through ... we can tell because
     # we got the 'code' argument in the URL.
     app.logger.debug("Code was in flask.request.args")
-    auth_code= flask.request.args.get('code')
-    credentials= flow.step2_exchange(auth_code)
-    flask.session['credentials']= credentials.to_json()
+    auth_code = flask.request.args.get('code')
+    credentials = flow.step2_exchange(auth_code)
+    flask.session['credentials'] = credentials.to_json()
     # Now I can build the service and execute the query,
     # but for the moment I'll just log it and go back to
     # the main screen
@@ -447,8 +449,8 @@ def interpret_time(text):
   app.logger.debug("Decoding time '{}'".format(text))
   time_formats = ["ha", "h:mma", "h:mm a", "H:mm", "H", "HH", "HH:mm"]
   try:
-    as_arrow= arrow.get(text, time_formats).replace(tzinfo=tz.tzlocal())
-    as_arrow= as_arrow.replace(year=2016)  # HACK see below
+    as_arrow = arrow.get(text, time_formats).replace(tzinfo=flask.session["time_zone"])
+    as_arrow=as_arrow.replace(year=2016)  # HACK see below
     app.logger.debug("Succeeded interpreting time")
   except:
     app.logger.debug("Failed to interpret time")
@@ -474,10 +476,10 @@ def interpret_date(text, shift):
   Shift takes a boolean. Used to shift the end day so we actually search the proper time range. With the shift, a time range that reads 11/11/17 - 11/11/17 will actually span from 00:00 to 24:00. Original implementation would not span any time, as it was being interpreted as 00:00 to 00:00 on 11/17.
   """
   try:
-    as_arrow= arrow.get(text, "MM/DD/YYYY").replace(
-        tzinfo=tz.tzlocal())
+    as_arrow=arrow.get(text, "MM/DD/YYYY").replace(
+        tzinfo=flask.session["time_zone"])
     if shift == True:
-      as_arrow= as_arrow.shift(days=1)
+      as_arrow=as_arrow.shift(days=1)
   except:
     flask.flash("Date '{}' didn't fit expected format 12/31/2001")
     raise
@@ -488,7 +490,7 @@ def next_day(isotext):
   """
   ISO date + 1 day (used in query to Google calendar)
   """
-  as_arrow= arrow.get(isotext)
+  as_arrow=arrow.get(isotext)
   return as_arrow.replace(days=+1).isoformat()
 
 ####
@@ -503,13 +505,13 @@ def cal_sort_key(cal):
   (" " sorts before "X", and tuples are compared piecewise)
   """
   if cal["selected"]:
-    selected_key= " "
+    selected_key=" "
   else:
-    selected_key= "X"
+    selected_key="X"
   if cal["primary"]:
-    primary_key= " "
+    primary_key=" "
   else:
-    primary_key= "X"
+    primary_key="X"
   return (primary_key, selected_key, cal["summary"])
 
 
@@ -522,7 +524,7 @@ def cal_sort_key(cal):
 @app.template_filter('fmtdate')
 def format_arrow_date(date):
   try:
-    normal= arrow.get(date)
+    normal=arrow.get(date)
     return normal.format("ddd MM/DD/YYYY")
   except:
     return "(bad date)"
@@ -531,7 +533,7 @@ def format_arrow_date(date):
 @app.template_filter('fmttime')
 def format_arrow_time(time):
   try:
-    normal= arrow.get(time)
+    normal=arrow.get(time)
     return normal.format("HH:mm")
   except:
     return "(bad time)"
