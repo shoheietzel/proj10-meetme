@@ -318,6 +318,10 @@ def init_session_values():
   now = arrow.now('local')     # We really should be using tz from browser
   tomorrow = now.replace(days=+1)
   nextweek = now.replace(days=+7)
+
+  flask.session["time_zone"] = "US/Pacific"
+  app.logger.debug(flask.session["time_zone"])
+
   flask.session["begin_date"] = tomorrow.floor('day').isoformat()
   flask.session["end_date"] = nextweek.ceil('day').isoformat()
   flask.session["daterange"] = "{} - {}".format(
