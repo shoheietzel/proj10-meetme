@@ -48,4 +48,5 @@ def get_free_times(all_events, daily_avail):
                 raise Exception("invalid event format while checking", event["summary"], " with ",
                                 free_block["start"], " ", free_block["end"])
         daily_avail = new_daily_avail
+    daily_avail = sorted(daily_avail, key=lambda k: k['start'])
     return daily_avail

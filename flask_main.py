@@ -4,10 +4,17 @@ from flask import request
 from flask import url_for
 import uuid
 
+import pymongo
+from pymongo import MongoClient
+
 import json
 import logging
+import sys
 
 import avail_times
+import ast
+import random
+import string
 
 # Date handling
 import arrow  # Replacement for datetime, based on moment.js
@@ -22,6 +29,10 @@ import httplib2   # used in oauth2 flow
 # Google API for services
 from apiclient import discovery
 
+# mongodb imports
+from bson.objectid import ObjectId
+
+
 ###
 # Globals
 ###
@@ -31,6 +42,15 @@ if __name__ == "__main__":
 else:
   CONFIG = config.configuration(proxied=True)
 
+MONGO_CLIENT_URL = "mongodb://{}:{}@{}:{}/{}".format(
+    CONFIG.DB_USER,
+    CONFIG.DB_USER_PW,
+    CONFIG.DB_HOST,
+    CONFIG.DB_PORT,
+    CONFIG.DB)
+
+print("Using URL '{}'".format(MONGO_CLIENT_URL))
+
 app = flask.Flask(__name__)
 app.debug = CONFIG.DEBUG
 app.logger.setLevel(logging.DEBUG)
@@ -39,6 +59,19 @@ app.secret_key = CONFIG.SECRET_KEY
 SCOPES = 'https://www.googleapis.com/auth/calendar.readonly'
 CLIENT_SECRET_FILE = CONFIG.GOOGLE_KEY_FILE  # You'll need this
 APPLICATION_NAME = 'MeetMe class project'
+
+####
+# Database connection per server process
+###
+
+try:
+  dbclient = MongoClient(MONGO_CLIENT_URL)  # mongo connection string
+  db = getattr(dbclient, CONFIG.DB)
+  collection = db.dated
+
+except:
+  print("Failure opening database.  Is Mongo running? Correct password?")
+  sys.exit(1)
 
 #############################
 #
@@ -51,64 +84,140 @@ APPLICATION_NAME = 'MeetMe class project'
 @app.route("/index")
 def index():
   app.logger.debug("Entering index")
+  app.logger.debug("Main page entry")
+  # g.meeting = get_meeting(id)
+  flask.g.url = MONGO_CLIENT_URL
   init_session_values()
   return render_template('index.html')
 
+@app.route('/setrange', methods=['POST'])
+def setrange():
+  """
+  User chose a date range with the bootstrap daterange
+  widget.
+  """
+  app.logger.debug("Entering setrange")
+  # setting working hours
+  start_num=request.form.get('start_num')
+  end_num=request.form.get('end_num')
+  flask.session["time_zone"]=request.form.get('time_zone')
+  flask.session["begin_time"]=interpret_time(start_num)
+  flask.session["end_time"]=interpret_time(end_num)
+  flask.session["display_begin_time"]=arrow.get(
+      flask.session["begin_time"]).format("HH:mm")
+  flask.session["display_end_time"]=arrow.get(
+      flask.session["end_time"]).format("HH:mm")
 
-@app.route("/choose")
+  flask.flash("Setrange gave us '{}'".format(
+      request.form.get('daterange')))
+  daterange=request.form.get('daterange')
+
+  flask.session['daterange']=daterange
+  daterange_parts=daterange.split()
+  app.logger.debug(daterange_parts[0])
+  app.logger.debug(daterange_parts[1])
+  app.logger.debug(daterange_parts[2])
+  flask.session['begin_date']=interpret_date(daterange_parts[0], False)
+  flask.session['end_date']=interpret_date(daterange_parts[2], True)
+  app.logger.debug("Setrange parsed {} - {}  dates as {} - {}".format(
+      daterange_parts[0], daterange_parts[1],
+      flask.session['begin_date'], flask.session['end_date']))
+
+  return flask.redirect(flask.url_for("choose"))
+
+@app.route("/choose", methods=['POST', 'GET'])
 def choose():
-  """
-    We'll need authorization to list calendars
-    I wanted to put what follows into a function, but had
-    to pull it back here because the redirect has to be a
-    'return'
-  """
   app.logger.debug("Checking credentials for Google calendar access")
-  credentials = valid_credentials()
+  credentials=valid_credentials()
   if not credentials:
     app.logger.debug("Redirecting to authorization")
     return flask.redirect(flask.url_for('oauth2callback'))
 
-  gcal_service = get_gcal_service(credentials)
+  gcal_service=get_gcal_service(credentials)
   app.logger.debug("Returned from get_gcal_service")
-  flask.g.calendars = list_calendars(gcal_service)
+  flask.g.calendars=list_calendars(gcal_service)
   app.logger.debug(flask.g.calendars)
 
-  flask.g.all_events = list_events(gcal_service, flask.g.calendars)
-  flask.g.daily_availability = list_daily_availability()
+  if request.method == 'POST':
+    selected_cals=request.form.getlist('calendar')
 
-  app.logger.debug("flask.g.all_events")
-  app.logger.debug(flask.g.all_events)
-  app.logger.debug("flask.g.daily_availability")
-  app.logger.debug(flask.g.daily_availability)
+    flask.g.all_events=list_events(gcal_service, selected_cals)
+    flask.g.daily_availability=list_daily_availability()
 
-  flask.g.daily_availability = avail_times.get_free_times(
-      flask.g.all_events, flask.g.daily_availability)
+    app.logger.debug("flask.g.all_events")
+    app.logger.debug(flask.g.all_events)
+    app.logger.debug("flask.g.daily_availability")
+    app.logger.debug(flask.g.daily_availability)
 
-  app.logger.debug("flask.g.daily_availability")
-  app.logger.debug(flask.g.daily_availability)
+    flask.g.daily_availability=avail_times.get_free_times(
+        flask.g.all_events, flask.g.daily_availability)
 
-  flask.g.all_events_formatted = organize_times(flask.g.all_events, True)
-  flask.g.daily_availability_formatted = organize_times(
-      flask.g.daily_availability, False)
+    app.logger.debug("flask.g.daily_availability")
+    app.logger.debug(flask.g.daily_availability)
+
+    flask.g.all_events_formatted=organize_times(flask.g.all_events, True)
+    flask.g.daily_availability_formatted=organize_times(
+        flask.g.daily_availability, False)
 
   return render_template('index.html')
 
+@app.route("/codegenerator", methods=['POST'])
+def codegenerator():
+  meeting_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=12))
+  admin_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+
+  if request.method == 'POST':
+    meeting_info=request.form.getlist('meeting_info')
+    flask.session['data_to_send'] = []
+    db = dbclient.meetme.meetings
+    for i in range(len(meeting_info)):
+      split_meeting_info = meeting_info[i].split("@")
+      start = split_meeting_info[0][18:43]
+      end = split_meeting_info[0][62:87]
+      date_string = split_meeting_info[1][:-2]
+      flask.session['data_to_send'].append({
+        "start": start,
+        "end": end,
+        "date_string": date_string,
+        "responses": 0
+      })
+
+    flask.session['data_to_send'].append({"meeting_id": flask.session['meeting_id']})
+    flask.session['data_to_send'].append({"admin_pw": flask.session['admin_code']})
+    app.logger.debug('data_to_send')
+    app.logger.debug(flask.session['data_to_send'])
+    #db.insert(data_to_send)
+
+  return flask.redirect(flask.url_for('meetingsetup', meeting_id=meeting_id, admin_code=admin_code))
+
+@app.route("/meetingsetup/meeting_id=<string:meeting_id>/<string:admin_code>")
+def meetingsetup(meeting_id,admin_code):
+  flask.session['meeting_id'] = meeting_id
+  flask.session['admin_code'] = admin_code
+
+  return render_template('meetingsetup.html')
+
+"""def get_meeting(meeting_id):
+  db = dbclient.meetme.meetings
+  app.logger.debug("in get_meetings")
+  for meeting in db.find():
+    if meeting['_id'] == meeting_id:
+      return meeting
+  raise Exception('My error!')
+  return"""
 
 def organize_times(event_list, add_summary):
   """
  sort in order, format for printing
   """
-  date_string_list = []
-  event_list = sorted(event_list, key=lambda k: k['start'])
-
+  date_string_list=[]
   for event in event_list:
-    start = arrow.get(event["start"]).format("HH:mm")
-    end = arrow.get(event["end"]).format("HH:mm")
-    start_date = arrow.get(event["start"]).format("MM/DD/YYYY")
-    end_date = arrow.get(event["end"]).format("MM/DD/YYYY")
+    start=arrow.get(event["start"]).format("HH:mm")
+    end=arrow.get(event["end"]).format("HH:mm")
+    start_date=arrow.get(event["start"]).format("MM/DD/YYYY")
+    end_date=arrow.get(event["end"]).format("MM/DD/YYYY")
     if start_date == end_date:
-      date_string = start_date + ": " + start + " to " + end
+      date_string=start_date + ": " + start + " to " + end
       if add_summary == True:
         date_string_list.append({
           "date_string": date_string,
@@ -117,7 +226,7 @@ def organize_times(event_list, add_summary):
       else:
         date_string_list.append(date_string)
     else:
-      date_string = start_date + ": " + start + " to " + end_date + ": " + end
+      date_string=start_date + ": " + start + " to " + end_date + ": " + end
       if add_summary == True:
         date_string_list.append({
           "date_string": date_string,
@@ -137,28 +246,27 @@ def list_calendars(service):
   Google Calendars web app) calendars before unselected calendars.
   """
   app.logger.debug("Entering list_calendars")
-  calendar_list = service.calendarList().list().execute()["items"]
-  result = []
+  calendar_list=service.calendarList().list().execute()["items"]
+  result=[]
   for cal in calendar_list:
-    kind = cal["kind"]
-    id = cal["id"]
+    kind=cal["kind"]
+    id=cal["id"]
     if "description" in cal:
-      desc = cal["description"]
+      desc=cal["description"]
     else:
-      desc = "(no description)"
-    summary = cal["summary"]
+      desc="(no description)"
+    summary=cal["summary"]
     # Optional binary attributes with False as default
-    selected = ("selected" in cal) and cal["selected"]
-    primary = ("primary" in cal) and cal["primary"]
+    selected=("selected" in cal) and cal["selected"]
+    primary=("primary" in cal) and cal["primary"]
 
-    if selected == True:
-      result.append(
-          {"kind": kind,
-           "id": id,
-           "summary": summary,
-           "selected": selected,
-           "primary": primary
-           })
+    result.append(
+        {"kind": kind,
+         "id": id,
+         "summary": summary,
+         "selected": selected,
+         "primary": primary
+         })
   return sorted(result, key=cal_sort_key)
 
 
@@ -167,46 +275,48 @@ def list_events(service, calendars):
   Gets a list of events, add to respective calendar, and format for printing.
   """
   app.logger.debug("Entering list_events")
-  all_events_list = []
+  all_events_list=[]
   for calendar in calendars:
-    page_token = None
+    page_token=None
     while True:
-      events = service.events().list(
-          calendarId=calendar["id"], singleEvents=True, orderBy='startTime', pageToken=page_token, timeMin=flask.session['begin_date'], timeMax=flask.session['end_date']).execute()
+      events=service.events().list(
+          calendarId=calendar, singleEvents=True, orderBy='startTime', pageToken=page_token, timeMin=flask.session['begin_date'], timeMax=flask.session['end_date']).execute()
       app.logger.debug(events)
       # iterate through events
       for event in events["items"]:
-        add = True
+        add=True
         # don't list transparent events
         if ("transparency" in event and event["transparency"] == "transparent"):
-          add = False
+          add=False
         else:
           # check type of event (dict varies based on this)
           # all day events will overlap working hours
           if "date" in event["start"]:
-            start = arrow.get(event["start"]["date"]).replace(tzinfo=flask.session["time_zone"])
-            end = arrow.get(event["end"]["date"]).replace(tzinfo=flask.session["time_zone"])
+            start=arrow.get(event["start"]["date"]).replace(
+                tzinfo=flask.session["time_zone"])
+            end=arrow.get(event["end"]["date"]).replace(
+                tzinfo=flask.session["time_zone"])
           # event with start time/end time
           elif "dateTime" in event["start"]:
-            start = arrow.get(event["start"]["dateTime"])
-            end = arrow.get(event["end"]["dateTime"])
+            start=arrow.get(event["start"]["dateTime"])
+            end=arrow.get(event["end"]["dateTime"])
             # check if event occurs during working hours
-            valid = during_workday(start, end)
+            valid=during_workday(start, end)
             if valid == False:
-              add = False
+              add=False
           else:
             raise Exception("unrecognized dateTime format")
 
         if add == True:  # set dict vals and append
           if 'summary' in event:
-            summary = event["summary"]
+            summary=event["summary"]
           all_events_list.append(
               {"start": start,
                "end": end,
                "summary": summary
                })
           # add event info to appropriate key
-      page_token = events.get('nextPageToken')
+      page_token=events.get('nextPageToken')
       if not page_token:
         break
   return all_events_list
@@ -220,14 +330,14 @@ def during_workday(start, end):
     start and end both after 5
     start after 5 and end before 5 and date increment only one day
   """
-  event_start_time = arrow.get(start).format("HH")
-  event_end_time = arrow.get(end).format("HH")
-  begin_time = arrow.get(flask.session["begin_time"]).format("HH")
-  end_time = arrow.get(flask.session["end_time"]).format("HH")
+  event_start_time=arrow.get(start).format("HH")
+  event_end_time=arrow.get(end).format("HH")
+  begin_time=arrow.get(flask.session["begin_time"]).format("HH")
+  end_time=arrow.get(flask.session["end_time"]).format("HH")
 
-  event_start_date = arrow.get(start).format("YYYY-MM-DD")
-  shifted_start_date = arrow.get(start).shift(days=1).format("YYYY-MM-DD")
-  event_end_date = arrow.get(end).format("YYYY-MM-DD")
+  event_start_date=arrow.get(start).format("YYYY-MM-DD")
+  shifted_start_date=arrow.get(start).shift(days=1).format("YYYY-MM-DD")
+  event_end_date=arrow.get(end).format("YYYY-MM-DD")
 
   # Don't add events that occur outside of working hours
   # case 1: event that occurs before working hours
@@ -244,64 +354,31 @@ def list_daily_availability():
   """
   creates a dict of free times that we can compare our busy times against
   """
-  daily_avail_list = []
-  date_start = arrow.get(flask.session['begin_date'])
-  date_end = arrow.get(flask.session['end_date']).shift(days=-1)
-  time_start = arrow.get(flask.session["begin_time"]).format('HH')
-  time_end = arrow.get(flask.session["end_time"]).format('HH')
-  time_start_min = arrow.get(flask.session["begin_time"]).format('mm')
-  time_end_min = arrow.get(flask.session["end_time"]).format('mm')
+  daily_avail_list=[]
+  date_start=arrow.get(flask.session['begin_date'])
+  date_end=arrow.get(flask.session['end_date']).shift(days=-1)
+  time_start=arrow.get(flask.session["begin_time"]).format('HH')
+  time_end=arrow.get(flask.session["end_time"]).format('HH')
+  time_start_min=arrow.get(flask.session["begin_time"]).format('mm')
+  time_end_min=arrow.get(flask.session["end_time"]).format('mm')
 
                                      # 11/12 - 11/26
   while date_start <= date_end:  # 11/12 9am - 11/26 9am
-    start = date_start.shift(hours=int(time_start), minutes=int(
+    start=date_start.shift(hours=int(time_start), minutes=int(
         time_start_min)).replace(tzinfo=flask.session["time_zone"])
-    end = date_start.shift(hours=int(time_end), minutes=int(
+    end=date_start.shift(hours=int(time_end), minutes=int(
         time_end_min)).replace(tzinfo=flask.session["time_zone"])
     daily_avail_list.append({
         "start": start,
         "end": end
     })
-    date_start = arrow.get(next_day(date_start))
+    date_start=arrow.get(next_day(date_start))
   return daily_avail_list
 
 #####
 
 
-@app.route('/setrange', methods=['POST'])
-def setrange():
-  """
-  User chose a date range with the bootstrap daterange
-  widget.
-  """
-  app.logger.debug("Entering setrange")
-  # setting working hours
-  start_num = request.form.get('start_num')
-  end_num = request.form.get('end_num')
-  flask.session["time_zone"] = request.form.get('time_zone')
-  flask.session["begin_time"] = interpret_time(start_num)
-  flask.session["end_time"] = interpret_time(end_num)
-  flask.session["display_begin_time"] = arrow.get(
-      flask.session["begin_time"]).format("HH:mm")
-  flask.session["display_end_time"] = arrow.get(
-      flask.session["end_time"]).format("HH:mm")
 
-  flask.flash("Setrange gave us '{}'".format(
-      request.form.get('daterange')))
-  daterange = request.form.get('daterange')
-
-  flask.session['daterange'] = daterange
-  daterange_parts = daterange.split()
-  app.logger.debug(daterange_parts[0])
-  app.logger.debug(daterange_parts[1])
-  app.logger.debug(daterange_parts[2])
-  flask.session['begin_date'] = interpret_date(daterange_parts[0], False)
-  flask.session['end_date'] = interpret_date(daterange_parts[2], True)
-  app.logger.debug("Setrange parsed {} - {}  dates as {} - {}".format(
-      daterange_parts[0], daterange_parts[1],
-      flask.session['begin_date'], flask.session['end_date']))
-
-  return flask.redirect(flask.url_for("choose"))
 
 ####
 #   Initialize session variables
@@ -315,27 +392,27 @@ def init_session_values():
   """
   app.logger.debug("entering init_session_values")
   # Default date span = tomorrow to 1 week from now
-  now = arrow.now('local')     # We really should be using tz from browser
-  tomorrow = now.replace(days=+1)
-  nextweek = now.replace(days=+7)
+  now=arrow.now('local')     # We really should be using tz from browser
+  tomorrow=now.replace(days=+1)
+  nextweek=now.replace(days=+7)
 
-  flask.session["time_zone"] = "US/Pacific"
+  flask.session["time_zone"]="US/Pacific"
   app.logger.debug(flask.session["time_zone"])
 
-  flask.session["begin_date"] = tomorrow.floor('day').isoformat()
-  flask.session["end_date"] = nextweek.ceil('day').isoformat()
-  flask.session["daterange"] = "{} - {}".format(
+  flask.session["begin_date"]=tomorrow.floor('day').isoformat()
+  flask.session["end_date"]=nextweek.ceil('day').isoformat()
+  flask.session["daterange"]="{} - {}".format(
       tomorrow.format("MM/DD/YYYY"),
       nextweek.format("MM/DD/YYYY"))
   # Default time span each day, 9 to 5
-  flask.session["begin_time"] = interpret_time("9am")
-  flask.session["end_time"] = interpret_time("5pm")
+  flask.session["begin_time"]=interpret_time("9am")
+  flask.session["end_time"]=interpret_time("5pm")
   # flask session values formatted to display
-  flask.session["display_begin_time"] = arrow.get(
+  flask.session["display_begin_time"]=arrow.get(
       flask.session["begin_time"]).format("HH:mm")
-  flask.session["display_end_time"] = arrow.get(
+  flask.session["display_end_time"]=arrow.get(
       flask.session["end_time"]).format("HH:mm")
-  flask.session["time_zone"] = "US/Pacific"
+  flask.session["time_zone"]="US/Pacific"
   app.logger.debug(flask.session["time_zone"])
 
 
@@ -377,7 +454,7 @@ def valid_credentials():
   if 'credentials' not in flask.session:
     return None
 
-  credentials = client.OAuth2Credentials.from_json(
+  credentials=client.OAuth2Credentials.from_json(
       flask.session['credentials'])
 
   if (credentials.invalid or
@@ -397,8 +474,8 @@ def get_gcal_service(credentials):
   Then the second call will succeed without additional authorization.
   """
   app.logger.debug("Entering get_gcal_service")
-  http_auth = credentials.authorize(httplib2.Http())
-  service = discovery.build('calendar', 'v3', http=http_auth)
+  http_auth=credentials.authorize(httplib2.Http())
+  service=discovery.build('calendar', 'v3', http=http_auth)
   app.logger.debug("Returning service")
   return service
 
@@ -413,7 +490,7 @@ def oauth2callback():
   and so on.
   """
   app.logger.debug("Entering oauth2callback")
-  flow = client.flow_from_clientsecrets(
+  flow=client.flow_from_clientsecrets(
       CLIENT_SECRET_FILE,
       scope=SCOPES,
       redirect_uri=flask.url_for('oauth2callback', _external=True))
@@ -427,7 +504,7 @@ def oauth2callback():
   app.logger.debug("Got flow")
   if 'code' not in flask.request.args:
     app.logger.debug("Code not in flask.request.args")
-    auth_uri = flow.step1_get_authorize_url()
+    auth_uri=flow.step1_get_authorize_url()
     return flask.redirect(auth_uri)
     # This will redirect back here, but the second time through
     # we'll have the 'code' parameter set
@@ -435,9 +512,9 @@ def oauth2callback():
     # It's the second time through ... we can tell because
     # we got the 'code' argument in the URL.
     app.logger.debug("Code was in flask.request.args")
-    auth_code = flask.request.args.get('code')
-    credentials = flow.step2_exchange(auth_code)
-    flask.session['credentials'] = credentials.to_json()
+    auth_code=flask.request.args.get('code')
+    credentials=flow.step2_exchange(auth_code)
+    flask.session['credentials']=credentials.to_json()
     # Now I can build the service and execute the query,
     # but for the moment I'll just log it and go back to
     # the main screen
@@ -453,9 +530,10 @@ def interpret_time(text):
   case it will also flash a message explaining accepted formats.
   """
   app.logger.debug("Decoding time '{}'".format(text))
-  time_formats = ["ha", "h:mma", "h:mm a", "H:mm", "H", "HH", "HH:mm"]
+  time_formats=["ha", "h:mma", "h:mm a", "H:mm", "H", "HH", "HH:mm"]
   try:
-    as_arrow = arrow.get(text, time_formats).replace(tzinfo=flask.session["time_zone"])
+    as_arrow=arrow.get(text, time_formats).replace(
+        tzinfo=flask.session["time_zone"])
     as_arrow=as_arrow.replace(year=2016)  # HACK see below
     app.logger.debug("Succeeded interpreting time")
   except:

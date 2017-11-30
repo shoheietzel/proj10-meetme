@@ -35,7 +35,7 @@
 <body>
 <div class="container">
 
-<h2>Google Calendar Free Times</h2>
+<h2>HEADING</h2>
 <br>
 <p><i><b>Step 1:</b> Choose your workings hours(or use the default times)</i></p>
 <p><i><b>Step 2:</b> Choose your date range</i></p>
@@ -169,7 +169,6 @@
       </div>
     {% endfor %}
     <button type=submit name="selectcal">Select</button>
-    <a href="/sample"> Sample </a>
   </form>
   {% endif %}
 
@@ -180,17 +179,9 @@
   <div class="row">
     <div class="col-md-12">
       <h3> Free times </h3>
-      <form id="setup" method="post" action="/codegenerator">
-        {% for i in range(g.daily_availability_formatted|length) %}
-          <div class="row">
-            <div class="col-md-6">
-              <input type="checkbox" name="meeting_info" value="{{ g.daily_availability[i] }}@{{ g.daily_availability_formatted[i] }} }">
-              {{ g.daily_availability_formatted[i] }}
-            </div>
-          </div>
-        {% endfor %}
-        <button type="submit" name="setup"/> Initialize Meeting</button>
-      </form>
+      {% for i in range(g.daily_availability_formatted|length) %}
+        <p><b>{{ g.daily_availability_formatted[i] }}</b></p>
+      {% endfor %}
     </div>
   </div>
 {% endif %}

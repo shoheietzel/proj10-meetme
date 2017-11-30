@@ -1,0 +1,63 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html lang="en"> <head>
+<title>Free Times</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link rel="stylesheet" type="text/css"
+     href="//cdn.jsdelivr.net/bootstrap/latest/css/bootstrap.css"
+/>
+
+
+<link rel="stylesheet" type="text/css"
+    href="/static/css/busy.css"
+/>
+
+<!-- jquery from a content distribution network; probably cached -->
+<script type="text/javascript"
+     src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js">
+</script>
+
+<!-- Ideally the rest of our javascript dependencies would be
+     bundled and minified with 'browserify', but I've found that
+     it difficult to handle browserify dependencies for class
+     projects.  So, we'll pick up moment and a date range picker
+     from CDNs instead.
+-->
+
+<script type="text/javascript" src="//cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+
+<script type="text/javascript" src="//cdn.jsdelivr.net/bootstrap.daterangepicker/2/daterangepicker.js"></script>
+<link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/bootstrap.daterangepicker/2/daterangepicker.css" />
+
+
+</head>
+
+<body>
+<div class="container">
+
+<h1>Confirm Meeting Setup</h1>
+<br>
+<div class="row">
+  <div class="col-md-12">
+    <h3> Your Selected Meeting Times </h3>
+    {% for i in range(session.data_to_send|length) %}
+      <p>{{ session.data_to_send[i]['date_string'] }}</p>
+    {% endfor %}
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-12">
+    <h4> Sharable link for this meeting </h4>
+    <p><b> http://127.0.0.1:5000/meetme_app/meeting_id%{{ session.meeting_id }}/ </b></p>
+    <h4> Administrative link </h4>
+    <p style="color:red"><i> NOTE: Do not share this with other users </i></p>
+    <p><b> http://127.0.0.1:5000/meetme_app/meeting_id%{{ session.meeting_id }}/{{ session.admin_code }} </b></p>
+    <p>{{ session.admin_code }} is your admin code for this meeting. Please remember this, as a meeting cannot be finalized without this code.</p>
+  </div>
+</div>
+
+
+
+
+  </div>
+  </body> </html>
