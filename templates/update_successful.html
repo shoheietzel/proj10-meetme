@@ -34,31 +34,8 @@
 
 <body>
 <div class="container">
-
-<h1>Confirm Meeting Setup</h1>
-<br>
-<div class="row">
-  <div class="col-md-12">
-    <h3> Your Selected Meeting Times </h3>
-    {% for i in range(session.data_to_send|length-3) %}
-      <p>{{ session.data_to_send[i|string]['date_string'] }}</p>
-    {% endfor %}
-  </div>
-</div>
-<div class="row">
-  <div class="col-md-12">
-    <h4> Sharable link for this meeting </h4>
-    <p><b> http://127.0.0.1:5000/view/{{ session.meeting_id }}/ </b></p>
+    <h1>Update Successful!</h1>
     <br>
-    <h4> Administrative link </h4>
-    <p style="color:red"><i> NOTE: Do not share this with other users </i></p>
-    <p><b> http://127.0.0.1:5000/view_as_admin/{{ session.meeting_id }}/{{ session.admin_code }} </b></p>
-    <p>{{ session.admin_code }} is your admin code for this meeting. Please remember this, as a meeting cannot be finalized without this code.</p>
-  </div>
+    <p>Thank you for your response!</p>
 </div>
-
-
-
-
-  </div>
-  </body> </html>
+</body> </html>

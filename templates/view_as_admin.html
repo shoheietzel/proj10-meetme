@@ -35,22 +35,32 @@
 <body>
 <div class="container">
 
-<h1>Confirm Meeting Setup</h1>
+<h1>Viewing Meeting as Admin</h1>
 <br>
 <div class="row">
   <div class="col-md-12">
-    <h3> Your Selected Meeting Times </h3>
-    {% for i in range(session.data_to_send|length-3) %}
-      <p>{{ session.data_to_send[i|string]['date_string'] }}</p>
-    {% endfor %}
+    <h3> Possible Meeting Times and Responses</h3>
+    <form method="post" action="/finalize">
+      <select name=meeting_id>
+      {% for i in range(session.meeting_times|length) %}
+        <option value="{{ session.meeting_times[i]['meeting_id'] }}">
+        {{ session.meeting_times[i]['date_string'] }} --- Responses: 
+        {% for j in range(session.meeting_times[i]['response']|length) %}  
+          {{ session.meeting_times[i]['response'][j] }} ---
+        {% endfor %}</option>
+      {% endfor %}
+      </select>
+      <input type="submit" name="finalize"/> Finalize Meeting</button>
+    </form>
   </div>
 </div>
+<br>
 <div class="row">
   <div class="col-md-12">
-    <h4> Sharable link for this meeting </h4>
+    <h5> Sharable link for this meeting </h5>
     <p><b> http://127.0.0.1:5000/view/{{ session.meeting_id }}/ </b></p>
     <br>
-    <h4> Administrative link </h4>
+    <h5> Administrative link </h6>
     <p style="color:red"><i> NOTE: Do not share this with other users </i></p>
     <p><b> http://127.0.0.1:5000/view_as_admin/{{ session.meeting_id }}/{{ session.admin_code }} </b></p>
     <p>{{ session.admin_code }} is your admin code for this meeting. Please remember this, as a meeting cannot be finalized without this code.</p>

@@ -1,0 +1,177 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html lang="en"> <head>
+<title>Free Times</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link rel="stylesheet" type="text/css"
+     href="//cdn.jsdelivr.net/bootstrap/latest/css/bootstrap.css"
+/>
+
+
+<link rel="stylesheet" type="text/css"
+    href="/static/css/busy.css"
+/>
+
+<!-- jquery from a content distribution network; probably cached -->
+<script type="text/javascript"
+     src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js">
+</script>
+
+<!-- Ideally the rest of our javascript dependencies would be
+     bundled and minified with 'browserify', but I've found that
+     it difficult to handle browserify dependencies for class
+     projects.  So, we'll pick up moment and a date range picker
+     from CDNs instead.
+-->
+
+<script type="text/javascript" src="//cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+
+<script type="text/javascript" src="//cdn.jsdelivr.net/bootstrap.daterangepicker/2/daterangepicker.js"></script>
+<link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/bootstrap.daterangepicker/2/daterangepicker.css" />
+
+
+</head>
+
+<body>
+<div class="container">
+<br>
+<div class="row">
+    {% if g.daily_availability is not defined %}
+      <div class="col-md-6">
+      <h1>Viewing Your Openings</h1>
+      <form action="/setrangeuser/{{session.meeting_times[0]['meeting_id']}}" method="post">
+        Start time:
+        <select name=start_num>
+          <option value="00:00">0</option>
+          <option value="01:00">1</option>
+          <option value="02:00">2</option>
+          <option value="03:00">3</option>
+          <option value="04:00">4</option>
+          <option value="05:00">5</option>
+          <option value="06:00">6</option>
+          <option value="07:00">7</option>
+          <option value="08:00">8</option>
+          <option value="09:00" selected>9</option>
+          <option value="10:00">10</option>
+          <option value="11:00">11</option>
+          <option value="12:00">12</option>
+          <option value="13:00">13</option>
+          <option value="14:00">14</option>
+          <option value="15:00">15</option>
+          <option value="16:00">16</option>
+          <option value="17:00">17</option>
+          <option value="18:00">18</option>
+          <option value="19:00">19</option>
+          <option value="20:00">20</option>
+          <option value="21:00">21</option>
+          <option value="22:00">22</option>
+          <option value="23:00">23</option>
+          <option value="23:59">24</option>
+        </select>
+        <br>
+        End time:
+        <select name=end_num>
+          <option value="00:00">0</option>
+          <option value="01:00">1</option>
+          <option value="02:00">2</option>
+          <option value="03:00">3</option>
+          <option value="04:00">4</option>
+          <option value="05:00">5</option>
+          <option value="06:00">6</option>
+          <option value="07:00">7</option>
+          <option value="08:00">8</option>
+          <option value="09:00">9</option>
+          <option value="10:00">10</option>
+          <option value="11:00">11</option>
+          <option value="12:00">12</option>
+          <option value="13:00">13</option>
+          <option value="14:00">14</option>
+          <option value="15:00">15</option>
+          <option value="16:00">16</option>
+          <option value="17:00" selected>17</option>
+          <option value="18:00">18</option>
+          <option value="19:00">19</option>
+          <option value="20:00">20</option>
+          <option value="21:00">21</option>
+          <option value="22:00">22</option>
+          <option value="23:00">23</option>
+          <option value="23:59">24</option>
+        </select>
+        <br>
+        Time Zone:
+        <select name=time_zone>
+          <option value="US/Pacific" selected>US/Pacific</option>
+        </select>
+        <br>
+        <input type="text" name="daterange" size="12"
+          {% if session.daterange is defined %}
+               value="{{session.daterange}}"
+          {% endif %}
+           class="pull-down"
+           style="background: #fff; cursor: pointer; padding: 5px 10px;
+           border: 1px solid #ccc; width: 12em" >
+        <script type="text/javascript">
+        $(function() {
+        $('input[name="daterange"]').daterangepicker(
+          {    ranges: {
+                 'Today': [moment(), moment()],
+                 'Tomorrow':[moment().add(1, 'days'),
+                             moment().add(1, 'days')],
+                 'This week':[moment(), moment().endOf('week')],
+                 'Next week':[moment().add(7, 'days').startOf('week'),
+                              moment().add(7, 'days').endOf('week')],
+                 'This month':[moment(), moment().endOf('month')],
+                 'Within two weeks':[moment(),moment().add(15, 'days')]
+              }}
+             );
+          });
+        </script>
+
+        <input type="submit" value="Get Free Times" />
+        </form>
+      {% if g.calendars is defined %}
+        <h4>Choose which calendars' Events to display</h4>
+        <form id="selectcal" method="POST" action="/chooseuser/{{session.meeting_times[0]['meeting_id']}}">
+        {% for cal in g.calendars if cal.selected %}
+              <input type="checkbox" name="calendar"
+              value="{{cal.id}}">
+              {{ cal.summary }}
+            <br>
+        {% endfor %}
+        <button type=submit name="selectcal">Select</button>
+        </form>
+
+        <h4> Working hours: {{ session.display_begin_time }} to {{ session.display_end_time }} </h4>
+        <br>
+      {% endif %}
+    </div>
+    {% endif %}
+      {% if g.daily_availability is defined %}
+        <div class="col-md-6">
+          <h1>Viewing Your Openings</h1>
+          {% for i in range(g.daily_availability_formatted|length) %}
+            <p>{{ g.daily_availability_formatted[i] }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+      <div class="col-md-6">
+        <h1> Admin's Openings </h1>
+        <p> Please select all times that work for you </p>
+        <form id="selecttimes" method="POST" action="/update">
+        {% for i in range(session.meeting_times|length) %}
+          <input type="checkbox" name="times" value="{{session.meeting_times[i]['meeting_id']}} {{i}} ">
+            {{ session.meeting_times[i]['date_string'] }}
+            <br>
+        {% endfor %}
+        <br>
+        Enter name: <input type="text" name="name" value="">
+        <button type=submit name="selecttimes">Select</button>
+        </form>
+      </div>
+    </div>
+
+
+
+
+
+</body> </html>

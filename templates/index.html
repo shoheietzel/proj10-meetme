@@ -62,7 +62,6 @@
 <form action="/setrange" method="post">
   Start time:
     <select name=start_num>
-      <option value="09:00" selected>Choose...</option>
       <option value="00:00">0</option>
       <option value="01:00">1</option>
       <option value="02:00">2</option>
@@ -72,7 +71,7 @@
       <option value="06:00">6</option>
       <option value="07:00">7</option>
       <option value="08:00">8</option>
-      <option value="09:00">9</option>
+      <option value="09:00" selected>9</option>
       <option value="10:00">10</option>
       <option value="11:00">11</option>
       <option value="12:00">12</option>
@@ -89,11 +88,9 @@
       <option value="23:00">23</option>
       <option value="23:59">24</option>
     </select>
-    <i>Default: 09:00</i>
     <br>
     End time:
     <select name=end_num>
-      <option value="17:00" selected>Choose...</option>
       <option value="00:00">0</option>
       <option value="01:00">1</option>
       <option value="02:00">2</option>
@@ -111,7 +108,7 @@
       <option value="14:00">14</option>
       <option value="15:00">15</option>
       <option value="16:00">16</option>
-      <option value="17:00">17</option>
+      <option value="17:00" selected>17</option>
       <option value="18:00">18</option>
       <option value="19:00">19</option>
       <option value="20:00">20</option>
@@ -120,14 +117,11 @@
       <option value="23:00">23</option>
       <option value="23:59">24</option>
     </select>
-    <i>Default: 17:00</i>
     <br>
         Time Zone:
     <select name=time_zone>
-      <option value="US/Pacific" selected>Choose...</option>
-      <option value="US/Pacific">US/Pacific</option>
+      <option value="US/Pacific" selected>US/Pacific</option>
     </select>
-    <i>Default: US/Pacific</i>
     <br>
   <input type="text" name="daterange" size="12"
     {% if session.daterange is defined %}
@@ -169,7 +163,6 @@
       </div>
     {% endfor %}
     <button type=submit name="selectcal">Select</button>
-    <a href="/sample"> Sample </a>
   </form>
   {% endif %}
 
