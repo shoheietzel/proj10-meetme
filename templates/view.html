@@ -39,7 +39,7 @@
     {% if g.daily_availability is not defined %}
       <div class="col-md-6">
       <h1>Viewing Your Openings</h1>
-      <form action="/setrangeuser/{{session.meeting_times[0]['meeting_id']}}" method="post">
+      <form action="/usersetrange/{{session.meeting_times[0]['meeting_id']}}" method="post">
         Start time:
         <select name=start_num>
           <option value="00:00">0</option>
@@ -131,7 +131,7 @@
         </form>
       {% if g.calendars is defined %}
         <h4>Choose which calendars' Events to display</h4>
-        <form id="selectcal" method="POST" action="/chooseuser/{{session.meeting_times[0]['meeting_id']}}">
+        <form id="selectcal" method="POST" action="/userchoose/{{session.meeting_times[0]['meeting_id']}}">
         {% for cal in g.calendars if cal.selected %}
               <input type="checkbox" name="calendar"
               value="{{cal.id}}">

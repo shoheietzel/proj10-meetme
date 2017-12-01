@@ -163,8 +163,8 @@ def choose():
   return render_template('index.html')
 
 
-@app.route('/setrangeuser/<string:meeting_id>', methods=['POST'])
-def setrangeuser(meeting_id):
+@app.route('/usersetrange/<string:meeting_id>', methods=['POST'])
+def usersetrange(meeting_id):
   start_num = request.form.get('start_num')
   end_num = request.form.get('end_num')
   flask.session["time_zone"] = request.form.get('time_zone')
@@ -189,11 +189,10 @@ def setrangeuser(meeting_id):
   app.logger.debug("Setrange parsed {} - {}  dates as {} - {}".format(
       daterange_parts[0], daterange_parts[1],
       flask.session['begin_date'], flask.session['end_date']))
-  return flask.redirect(flask.url_for("chooseuser", meeting_id=meeting_id))
+  return flask.redirect(flask.url_for("userchoose", meeting_id=meeting_id))
 
-
-@app.route('/chooseuser/<string:meeting_id>', methods=['POST', 'GET'])
-def chooseuser(meeting_id):
+@app.route('/userchoose/<string:meeting_id>', methods=['POST', 'GET'])
+def userchoose(meeting_id):
   credentials = valid_credentials()
   if not credentials:
     return flask.redirect(flask.url_for('oauth2callback'))
@@ -267,6 +266,8 @@ def view(meeting_id):
   db = dbclient.meetme.meetings
   for meeting in db.find():
     if meeting['meeting']['meeting_id'] == meeting_id:
+      if meeting['meeting']['finalized'] != False:
+        return flask.redirect(flask.url_for('already_finalized', meeting_id=meeting_id))
       for i in range(len(meeting['meeting'])-3):
         flask.session["meeting_times"].append({
           "meeting_id": meeting['meeting']['meeting_id'],
@@ -286,6 +287,8 @@ def view_as_admin(meeting_id, admin_code):
   db = dbclient.meetme.meetings
   for meeting in db.find():
     if meeting['meeting']['meeting_id'] == meeting_id:
+      if meeting['meeting']['finalized'] != False:
+        return flask.redirect(flask.url_for('already_finalized', meeting_id=meeting_id))
       if meeting['meeting']['admin_code'] == admin_code:
         for i in range(len(meeting['meeting'])-3):
               flask.session["meeting_times"].append({
@@ -326,14 +329,27 @@ def update():
 @app.route("/finalize", methods=['POST'])
 def finalize():
   if request.method == 'POST':
-    meeting_id = request.form.get('meeting_id')
+    meeting_info = request.form.get('meeting_info')
+    split_info = meeting_info.split("@")
+    meeting_id = split_info[0]
+    date_string = split_info[1]
     db = dbclient.meetme.meetings
     update_string = "meeting.finalized"
     db.update_one(
           {"meeting.meeting_id":  meeting_id},
-          { '$set': {update_string: True}}
+          { '$set': {update_string: date_string}}
           )  
-  return render_template('update_successful.html')
+    return flask.redirect(flask.url_for('already_finalized', meeting_id=meeting_id))
+
+@app.route("/already_finalized/<string:meeting_id>")
+def already_finalized(meeting_id):
+  flask.session['meeting_id'] = meeting_id
+  db = dbclient.meetme.meetings
+  for meeting in db.find():
+    if meeting['meeting']['meeting_id'] == meeting_id:
+      flask.session['determined_time'] = meeting['meeting']['finalized']
+      return render_template('already_finalized.html')
+  return('incorrectid.html')
 
 
 def organize_times(event_list, add_summary):

@@ -41,16 +41,21 @@
   <div class="col-md-12">
     <h3> Possible Meeting Times and Responses</h3>
     <form method="post" action="/finalize">
-      <select name=meeting_id>
+      <select name=meeting_info>
+
       {% for i in range(session.meeting_times|length) %}
-        <option value="{{ session.meeting_times[i]['meeting_id'] }}">
+        <option value="{{ session.meeting_times[0]['meeting_id'] }}@{{ session.meeting_times[i]['date_string'] }}">
         {{ session.meeting_times[i]['date_string'] }} --- Responses: 
         {% for j in range(session.meeting_times[i]['response']|length) %}  
-          {{ session.meeting_times[i]['response'][j] }} ---
-        {% endfor %}</option>
+          {{ session.meeting_times[i]['response'][j] }} / 
+        {% endfor %}
+        </option>
       {% endfor %}
+        <option value="{{ session.meeting_times[0]['meeting_id'] }}@THIS MEETING WAS CANCELLED">
+          Cancel this meeting
+        </option>
       </select>
-      <input type="submit" name="finalize"/> Finalize Meeting</button>
+      <input type="submit" name="finalize"/> Finalize/Cancel Meeting</button>
     </form>
   </div>
 </div>
