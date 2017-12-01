@@ -55,19 +55,23 @@
           Cancel this meeting
         </option>
       </select>
-      <input type="submit" name="finalize"/> Finalize/Cancel Meeting</button>
+      <button type="submit" value="Finalize/Cancel Meeting<"/> Finalize/Cancel Meeting</button>
     </form>
   </div>
 </div>
 <br>
 <div class="row">
-  <div class="col-md-12">
+<div class="col-md-12">
     <h5> Sharable link for this meeting </h5>
-    <p><b> http://127.0.0.1:5000/view/{{ session.meeting_id }}/ </b></p>
+    <p><b> https://mighty-scrubland-35462.herokuapp.com/view/{{ session.meeting_id }}/ </b></p>
+    <p><i>For local server use (testing):</i></p> 
+    <p><i>http://127.0.0.1:5000/view/{{ session.meeting_id }}/ </i></p>
     <br>
-    <h5> Administrative link </h6>
+    <h5> Administrative link </h5>
     <p style="color:red"><i> NOTE: Do not share this with other users </i></p>
-    <p><b> http://127.0.0.1:5000/view_as_admin/{{ session.meeting_id }}/{{ session.admin_code }} </b></p>
+    <p><b> https://mighty-scrubland-35462.herokuapp.com/view_as_admin/{{ session.meeting_id }}/{{ session.admin_code }}  </b></p>
+    <p><i>For local server use (testing): </i></p>
+    <p><i>http://127.0.0.1:5000/view_as_admin/{{ session.meeting_id }}/{{ session.admin_code }} </i></p>
     <p>{{ session.admin_code }} is your admin code for this meeting. Please remember this, as a meeting cannot be finalized without this code.</p>
   </div>
 </div>

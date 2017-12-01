@@ -1,24 +1,28 @@
+#######################################
+# imports
+#######################################
+
 import flask
 from flask import render_template
 from flask import request
 from flask import url_for
 import uuid
 
+# for mLabs/mongodb
 import pymongo
 from pymongo import MongoClient
+from bson.objectid import ObjectId
 
 import json
 import logging
 import sys
 
-import avail_times
 import ast
 import random
 import string
 
-# Date handling
-import arrow  # Replacement for datetime, based on moment.js
-# import datetime # But we still need time
+# Date handling w/arrow
+import arrow
 from dateutil import tz  # For interpreting local times
 
 
@@ -29,13 +33,13 @@ import httplib2   # used in oauth2 flow
 # Google API for services
 from apiclient import discovery
 
-# mongodb imports
-from bson.objectid import ObjectId
+# Our own module
+import avail_times
 
-
-###
+#######################################
 # Globals
-###
+#######################################
+
 import config
 if __name__ == "__main__":
   CONFIG = config.configuration()
@@ -57,12 +61,12 @@ app.logger.setLevel(logging.DEBUG)
 app.secret_key = CONFIG.SECRET_KEY
 
 SCOPES = 'https://www.googleapis.com/auth/calendar.readonly'
-CLIENT_SECRET_FILE = CONFIG.GOOGLE_KEY_FILE  # You'll need this
+CLIENT_SECRET_FILE = CONFIG.GOOGLE_KEY_FILE 
 APPLICATION_NAME = 'MeetMe class project'
 
-####
+#######################################
 # Database connection per server process
-###
+#######################################
 
 try:
   dbclient = MongoClient(MONGO_CLIENT_URL)  # mongo connection string
@@ -73,13 +77,11 @@ except:
   print("Failure opening database.  Is Mongo running? Correct password?")
   sys.exit(1)
 
-#############################
-#
+#######################################
 #  Pages (routed from URLs)
-#
-#############################
+#######################################
 
-
+#opening page for viewing free times/setting up meetings
 @app.route("/")
 @app.route("/index")
 def index():
@@ -90,7 +92,7 @@ def index():
   init_session_values()
   return render_template('index.html')
 
-
+#process for setting range, after setting attributes, goes to choose
 @app.route('/setrange', methods=['POST'])
 def setrange():
   """
@@ -125,7 +127,9 @@ def setrange():
       flask.session['begin_date'], flask.session['end_date']))
   return flask.redirect(flask.url_for("choose"))
 
-
+#used for an admin trying to set up his free times
+#if redirected here from setrange, just gets the calendars 
+#if directed here through a POST from the user, gets the events to list free times
 @app.route("/choose", methods=['POST', 'GET'])
 def choose():
   app.logger.debug("Checking credentials for Google calendar access")
@@ -139,30 +143,27 @@ def choose():
   flask.g.calendars = list_calendars(gcal_service)
   app.logger.debug(flask.g.calendars)
 
-  if request.method == 'POST':
+  if request.method == 'POST':                      # if a POST from user
     selected_cals = request.form.getlist('calendar')
 
     flask.g.all_events = list_events(gcal_service, selected_cals)
     flask.g.daily_availability = list_daily_availability()
 
-    app.logger.debug("flask.g.all_events")
     app.logger.debug(flask.g.all_events)
-    app.logger.debug("flask.g.daily_availability")
     app.logger.debug(flask.g.daily_availability)
 
     flask.g.daily_availability = avail_times.get_free_times(
         flask.g.all_events, flask.g.daily_availability)
 
-    app.logger.debug("flask.g.daily_availability")
     app.logger.debug(flask.g.daily_availability)
 
     flask.g.all_events_formatted = organize_times(flask.g.all_events, True)
     flask.g.daily_availability_formatted = organize_times(
         flask.g.daily_availability, False)
-
   return render_template('index.html')
 
-
+#when a user viewing a meeting wants to setrange, they use this version
+#enough differences between setrange and usersetrange to create two approutes
 @app.route('/usersetrange/<string:meeting_id>', methods=['POST'])
 def usersetrange(meeting_id):
   start_num = request.form.get('start_num')
@@ -181,9 +182,6 @@ def usersetrange(meeting_id):
 
   flask.session['daterange'] = daterange
   daterange_parts = daterange.split()
-  app.logger.debug(daterange_parts[0])
-  app.logger.debug(daterange_parts[1])
-  app.logger.debug(daterange_parts[2])
   flask.session['begin_date'] = interpret_date(daterange_parts[0], False)
   flask.session['end_date'] = interpret_date(daterange_parts[2], True)
   app.logger.debug("Setrange parsed {} - {}  dates as {} - {}".format(
@@ -191,6 +189,7 @@ def usersetrange(meeting_id):
       flask.session['begin_date'], flask.session['end_date']))
   return flask.redirect(flask.url_for("userchoose", meeting_id=meeting_id))
 
+#user viewing a metting version of choose
 @app.route('/userchoose/<string:meeting_id>', methods=['POST', 'GET'])
 def userchoose(meeting_id):
   credentials = valid_credentials()
@@ -213,10 +212,10 @@ def userchoose(meeting_id):
     flask.g.all_events_formatted = organize_times(flask.g.all_events, True)
     flask.g.daily_availability_formatted = organize_times(
         flask.g.daily_availability, False)
-
   return render_template('view.html')
 
-
+#the initilization of a meeting
+#meeting id and admin codes are generated, and data entry is inserted into mLab db
 @app.route("/codegenerator", methods=['POST'])
 def codegenerator():
   meeting_id = ''.join(random.choices(
@@ -228,6 +227,7 @@ def codegenerator():
 
   if request.method == 'POST':
     meeting_info = request.form.getlist('meeting_info')
+    #put meeting_id, admin_code, finalized attributes in dict
     flask.session['data_to_send']['meeting_id'] = meeting_id
     flask.session['data_to_send']['admin_code'] = admin_code
     flask.session['data_to_send']['finalized'] = False
@@ -236,7 +236,7 @@ def codegenerator():
       start = split_meeting_info[0][18:43]
       end = split_meeting_info[0][62:87]
       date_string = split_meeting_info[1][:-2]
-
+      #insert this meeting slot into dict
       flask.session['data_to_send'][str(i)] = {
                                         "start": start,
                                         "end": end,
@@ -244,22 +244,21 @@ def codegenerator():
                                         "response": []
                                       }
 
-    app.logger.debug('data_to_send')
     app.logger.debug(flask.session['data_to_send'])
-    all_data = {'meeting': flask.session['data_to_send']}
+    all_data = {'meeting': flask.session['data_to_send']} #put all selected meeting times in one nested dict
 
     db = dbclient.meetme.meetings
     db.insert(all_data)
-
   return flask.redirect(flask.url_for('meetingsetup', meeting_id=meeting_id, admin_code=admin_code))
 
-
+#takes variables from URL and puts them into session, renders template for meet setup
 @app.route("/meetingsetup/<string:meeting_id>/<string:admin_code>")
 def meetingsetup(meeting_id, admin_code):
   flask.session['meeting_id'] = meeting_id
   flask.session['admin_code'] = admin_code
   return render_template('meetingsetup.html')
 
+#prepares viewing page for user with appropriate meeting time slots
 @app.route("/view/<string:meeting_id>/")
 def view(meeting_id):
   flask.session["meeting_times"] = []
@@ -279,6 +278,7 @@ def view(meeting_id):
       return render_template('view.html')
   return render_template('incorrectid.html')
 
+#prepares viewing page for admin with meeting times slots and user responses
 @app.route("/view_as_admin/<string:meeting_id>/<string:admin_code>")
 def view_as_admin(meeting_id, admin_code):
   flask.session['meeting_id'] = meeting_id
@@ -301,6 +301,7 @@ def view_as_admin(meeting_id, admin_code):
         return render_template('view_as_admin.html')
   return render_template('incorrectid.html')
 
+#handles data from a user responding to meeting times; updates the db accordingly
 @app.route("/update", methods=['POST'])
 def update():
   if request.method == 'POST':
@@ -326,6 +327,8 @@ def update():
           )
   return render_template('update_successful.html')
 
+#receives data for which meeting to finalize and what the final meeting time is
+#updates the db accordingly and sets the finalized attribute to meeting time string
 @app.route("/finalize", methods=['POST'])
 def finalize():
   if request.method == 'POST':
@@ -341,6 +344,8 @@ def finalize():
           )  
     return flask.redirect(flask.url_for('already_finalized', meeting_id=meeting_id))
 
+#if a meeting is already finalized, both view pages (user, admin) redirects to here
+#renders a template for already_finalized.html
 @app.route("/already_finalized/<string:meeting_id>")
 def already_finalized(meeting_id):
   flask.session['meeting_id'] = meeting_id
@@ -351,7 +356,11 @@ def already_finalized(meeting_id):
       return render_template('already_finalized.html')
   return('incorrectid.html')
 
+#######################################
+#  Functions (NOT pages) that return some information
+#######################################
 
+#creates "human-friendly" date_strings for html display
 def organize_times(event_list, add_summary):
   """
  sort in order, format for printing
@@ -382,7 +391,7 @@ def organize_times(event_list, add_summary):
         date_string_list.append(date_string)
   return date_string_list
 
-
+#takes gcal service and lists calendars
 def list_calendars(service):
   """
   Given a google 'service' object, return a list of
@@ -415,7 +424,7 @@ def list_calendars(service):
          })
   return sorted(result, key=cal_sort_key)
 
-
+#lists events from selected calendars
 def list_events(service, calendars):
   """
   Gets a list of events, add to respective calendar, and format for printing.
@@ -467,10 +476,9 @@ def list_events(service, calendars):
         break
   return all_events_list
 
-
+#checks if given event busy time overlaps the workday
 def during_workday(start, end):
   """
-  Check if event busy time overlaps the workday
   Three cases where even doesn't overlap 9 to 5 period:
     start and end both before 9
     start and end both after 5
@@ -495,11 +503,8 @@ def during_workday(start, end):
   else:
     return True
 
-
+#creates a dict of free times that we can compare our busy times against
 def list_daily_availability():
-  """
-  creates a dict of free times that we can compare our busy times against
-  """
   daily_avail_list = []
   date_start = arrow.get(flask.session['begin_date'])
   date_end = arrow.get(flask.session['end_date']).shift(days=-1)
@@ -521,16 +526,7 @@ def list_daily_availability():
     date_start = arrow.get(next_day(date_start))
   return daily_avail_list
 
-#####
-
-
-
-
-####
-#   Initialize session variables
-####
-
-
+#initializes session variables
 def init_session_values():
   """
   Start with some reasonable defaults for date and time ranges.
@@ -561,42 +557,8 @@ def init_session_values():
   flask.session["time_zone"] = "US/Pacific"
   app.logger.debug(flask.session["time_zone"])
 
-
-####
-  #
-  #  Google calendar authorization:
-  #      Returns us to the main /choose screen after inserting
-  #      the calendar_service object in the session state.  May
-  #      redirect to OAuth server first, and may take multiple
-  #      trips through the oauth2 callback function.
-  #
-  #  Protocol for use ON EACH REQUEST:
-  #     First, check for valid credentials
-  #         Get credentials (jump to the oauth2 protocol)
-  #         (redirects back to /choose, this time with credentials)
-  #     If we do have valid credentials
-  #         Get the service object
-  #
-  #  The final result of successful authorization is a 'service'
-  #  object.  We use a 'service' object to actually retrieve data
-  #  from the Google services. Service objects are NOT serializable ---
-  #  we can't stash one in a cookie.  Instead, on each request we
-  #  get a fresh serivce object from our credentials, which are
-  #  serializable.
-  #
-  #  Note that after authorization we always redirect to /choose;
-  #  If this is unsatisfactory, we'll need a session variable to use
-  #  as a 'continuation' or 'return address' to use instead.
-  #
-  ####
-
+#returns OAuth2 credentials if we have valid credentials in the session
 def valid_credentials():
-  """
-  Returns OAuth2 credentials if we have valid
-  credentials in the session.  This is a 'truthy' value.
-  Return None if we don't have credentials, or if they
-  have expired or are otherwise invalid.  This is a 'falsy' value.
-  """
   if 'credentials' not in flask.session:
     return None
 
@@ -608,24 +570,15 @@ def valid_credentials():
     return None
   return credentials
 
-
+#provides authorization for Google calendar 'service'
 def get_gcal_service(credentials):
-  """
-  We need a Google calendar 'service' object to obtain
-  list of calendars, busy times, etc.  This requires
-  authorization. If authorization is already in effect,
-  we'll just return with the authorization. Otherwise,
-  control flow will be interrupted by authorization, and we'll
-  end up redirected back to /choose *without a service object*.
-  Then the second call will succeed without additional authorization.
-  """
   app.logger.debug("Entering get_gcal_service")
   http_auth = credentials.authorize(httplib2.Http())
   service = discovery.build('calendar', 'v3', http=http_auth)
   app.logger.debug("Returning service")
   return service
 
-
+#gets oauth2callback for google services
 @app.route('/oauth2callback')
 def oauth2callback():
   """
@@ -667,7 +620,7 @@ def oauth2callback():
     app.logger.debug("Got credentials")
     return flask.redirect(flask.url_for('choose'))
 
-
+#read time in a human-compatible format and interpret as ISO format with timezone
 def interpret_time(text):
   """
   Read time in a human-compatible format and
@@ -698,11 +651,9 @@ def interpret_time(text):
   # FIXME: Remove the workaround when arrow is fixed (but only after testing
   # on raspberry Pi --- failure is likely due to 32-bit integers on that platform)
 
-
+#convert text of date to ISO format used internally, with the timezone
 def interpret_date(text, shift):
   """
-  Convert text of date to ISO format used internally,
-  with the local time zone.
   Shift takes a boolean. Used to shift the end day so we actually search the proper time range. With the shift, a time range that reads 11/11/17 - 11/11/17 will actually span from 00:00 to 24:00. Original implementation would not span any time, as it was being interpreted as 00:00 to 00:00 on 11/17.
   """
   try:
@@ -715,19 +666,12 @@ def interpret_date(text, shift):
     raise
   return as_arrow.isoformat()
 
-
+#shifts ISO date 1 day
 def next_day(isotext):
-  """
-  ISO date + 1 day (used in query to Google calendar)
-  """
   as_arrow = arrow.get(isotext)
   return as_arrow.replace(days=+1).isoformat()
 
-####
-#  Functions (NOT pages) that return some information
-####
-
-
+#sorts key for list of calendars
 def cal_sort_key(cal):
   """
   Sort key for the list of calendars:  primary calendar first,
@@ -744,13 +688,11 @@ def cal_sort_key(cal):
     primary_key = "X"
   return (primary_key, selected_key, cal["summary"])
 
-
-#################
-#
+#######################################
 # Functions used within the templates
-#
-#################
+#######################################
 
+#formatting arrow dates
 @app.template_filter('fmtdate')
 def format_arrow_date(date):
   try:
@@ -759,7 +701,7 @@ def format_arrow_date(date):
   except:
     return "(bad date)"
 
-
+#formatting arrow times
 @app.template_filter('fmttime')
 def format_arrow_time(time):
   try:
@@ -768,8 +710,9 @@ def format_arrow_time(time):
   except:
     return "(bad time)"
 
-#############
-
+#######################################
+# main
+#######################################
 
 if __name__ == "__main__":
   # App is created above so that it will
