@@ -316,15 +316,14 @@ def update():
     db = dbclient.meetme.meetings
     for i in range(len(data)):
       meeting_code = data[i][0:12]
-      if meeting_code == flask.session['meeting_id']:
-        key = data[i][-2:-1]
-        update_string = "meeting."+key+".response"
-        app.logger.debug(update_string)
-        app.logger.debug(name)
-        db.update_one(
-          {"meeting.meeting_id":  flask.session['meeting_id']},
-          { '$push': {update_string: name}}
-          )
+      key = data[i][-2:-1]
+      update_string = "meeting."+key+".response"
+      app.logger.debug(update_string)
+      app.logger.debug(name)
+      db.update_one(
+        {"meeting.meeting_id":  flask.session['meeting_id']},
+        { '$push': {update_string: name}}
+        )
   return render_template('update_successful.html')
 
 #receives data for which meeting to finalize and what the final meeting time is
