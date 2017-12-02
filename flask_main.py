@@ -474,6 +474,7 @@ def list_events(service, calendars):
       page_token = events.get('nextPageToken')
       if not page_token:
         break
+  app.logger.debug(all_events_list)
   return all_events_list
 
 #checks if given event busy time overlaps the workday
