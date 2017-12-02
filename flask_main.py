@@ -321,7 +321,7 @@ def update():
       app.logger.debug(update_string)
       app.logger.debug(name)
       db.update_one(
-        {"meeting.meeting_id":  flask.session['meeting_id']},
+        {"meeting.meeting_id":  meeting_code},
         { '$push': {update_string: name}}
         )
   return render_template('update_successful.html')
