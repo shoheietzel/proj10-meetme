@@ -1,10 +1,14 @@
 # Local
 secrets/*
-#client_secret.json 	#take out for heroku
-#CONFIG.py 		#take out for heroku
+client_secret.json 	#comment out for heroku
+CONFIG.py 		#comment out for heroku
 node_modules
 static/js/*.min.js
-#.goog_app_key.json 	#take out for heroku
+.goog_app_key.json 	#comment out for heroku
+
+runtime.txt		#comment out for heroku
+Profile			#comment out for heroku
+
 *~
 .DS_Store
 
